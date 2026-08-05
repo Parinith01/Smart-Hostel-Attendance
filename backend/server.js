@@ -118,12 +118,15 @@ let isSynced = false;
 async function ensureDbSynced() {
   if (isSynced) return;
   try {
-    await sequelize.sync();
-    await seedAdminAccount();
-    await seedSystemConfig();
-    scheduleAutoExpiry();
+    if (!process.env.VERCEL) {
+      await sequelize.sync();
+      await seedAdminAccount();
+      await seedSystemConfig();
+      scheduleAutoExpiry();
+    } else {
+      console.log('Database sync bypassed on Vercel (production database is already synchronized).');
+    }
     isSynced = true;
-    console.log('Database synchronized.');
   } catch (err) {
     console.error('Database synchronization failed:', err);
   }
@@ -537,7 +540,6 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 // Login Route
 app.post('/api/auth/login', async (req, res) => {
   try {
-    await seedAdminAccount();
     const { userId, password } = req.body;
 
     if (!userId || !password) {

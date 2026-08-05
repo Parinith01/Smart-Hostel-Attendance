@@ -114,33 +114,22 @@ app.use('/api/auth/forgot-password', otpLimiter);
 app.use('/api/auth/reset-password', otpLimiter);
 
 // Database Sync
-sequelize.sync().then(async () => {
-  console.log('Database synchronized.');
-  
-  // Add is_verified column if it doesn't exist (SQLite/Postgres safe)
+let isSynced = false;
+async function ensureDbSynced() {
+  if (isSynced) return;
   try {
-    await sequelize.query('ALTER TABLE AllowedEmails ADD COLUMN is_verified BOOLEAN DEFAULT 0');
-    console.log('Added is_verified column to AllowedEmails table.');
+    await sequelize.sync();
+    await seedAdminAccount();
+    await seedSystemConfig();
+    scheduleAutoExpiry();
+    isSynced = true;
+    console.log('Database synchronized.');
   } catch (err) {
-    // Column might already exist, which is expected
+    console.error('Database synchronization failed:', err);
   }
+}
 
-  // Add is_redeemed and redeemed_at columns to MealTokens if they don't exist
-  try {
-    await sequelize.query('ALTER TABLE MealTokens ADD COLUMN is_redeemed BOOLEAN DEFAULT 0');
-    console.log('Added is_redeemed column to MealTokens table.');
-  } catch (err) {}
-  try {
-    await sequelize.query('ALTER TABLE MealTokens ADD COLUMN redeemed_at DATETIME');
-    console.log('Added redeemed_at column to MealTokens table.');
-  } catch (err) {}
-
-  seedAdminAccount();
-  seedSystemConfig();
-  scheduleAutoExpiry();
-}).catch(err => {
-  console.error('Database synchronization failed:', err);
-});
+ensureDbSynced();
 
 // Auto-expire students whose leaving_year has passed — runs at server start & midnight daily
 function scheduleAutoExpiry() {

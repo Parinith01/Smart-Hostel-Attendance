@@ -1,10 +1,9 @@
-import PDFDocument from 'pdfkit';
-
 /**
  * Generates a clean, professional daily roster PDF with 4 color-coded sections.
  * Order: 1) Present (Verified), 2) On Long Leave, 3) Absent, 4) Not Voted
  */
-export function generateDailyRosterPDF(res, date, mealType, roster) {
+export async function generateDailyRosterPDF(res, date, mealType, roster) {
+  const { default: PDFDocument } = await import('pdfkit');
   const doc = new PDFDocument({ margin: 50, size: 'A4', bufferPages: true });
 
   res.setHeader('Content-Type', 'application/pdf');
@@ -180,7 +179,8 @@ export function generateDailyRosterPDF(res, date, mealType, roster) {
 /**
  * Generates a clean, professional combined monthly present/absent summary PDF.
  */
-export function generateMonthlySummaryPDF(res, month, summaryData) {
+export async function generateMonthlySummaryPDF(res, month, summaryData) {
+  const { default: PDFDocument } = await import('pdfkit');
   const doc = new PDFDocument({ margin: 50, size: 'A4', bufferPages: true });
 
   res.setHeader('Content-Type', 'application/pdf');

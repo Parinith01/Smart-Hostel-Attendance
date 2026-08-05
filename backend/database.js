@@ -21,12 +21,8 @@ if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsW
     logging: false
   });
 } else {
-  console.log('No DATABASE_URL provided or not PostgreSQL. Falling back to local SQLite...');
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: path.join(__dirname, 'hostel.db'),
-    logging: false
-  });
+  console.log('No DATABASE_URL provided. Using memory storage fallback...');
+  sequelize = new Sequelize('sqlite::memory:', { logging: false });
 }
 
 // ── Existing Models ──────────────────────────────────────────

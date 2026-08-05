@@ -4,7 +4,7 @@ import {
   User, Lock, Phone, Mail, Home, Shield, LogOut, CheckCircle, XCircle, 
   AlertTriangle, RefreshCw, Search, Filter, Calendar, Users, 
   CalendarDays, Award, Clock, FileSpreadsheet, FileText, ShieldAlert, Key, Utensils,
-  Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff
+  Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff, Fingerprint
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 
@@ -202,6 +202,35 @@ const Login = () => {
     }
   };
 
+  const handleFingerprintLogin = async () => {
+    if (!userId) return setError('Please enter your Student ID first to login with fingerprint.');
+    setError('');
+    setLoading(true);
+
+    try {
+      const fingerprint = getDeviceFingerprint();
+      const res = await fetch(`${API_BASE}/auth/login-fingerprint`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, fingerprint })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Fingerprint verification failed.');
+      }
+
+      sessionStorage.setItem('hms_user', JSON.stringify(data.user));
+      sessionStorage.setItem('hms_token', data.token);
+      
+      navigate('/student');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (view === 'select') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '90vh', padding: '2rem' }}>
@@ -358,6 +387,19 @@ const Login = () => {
           <button type="submit" className={view === 'admin' ? "btn btn-pink" : "btn btn-primary"} style={{ width: '100%', padding: '0.85rem' }} disabled={loading}>
             {loading ? 'Authenticating...' : (view === 'admin' ? 'Sign In to Core' : 'Sign In')}
           </button>
+          
+          {view === 'student' && (
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              style={{ width: '100%', padding: '0.85rem', marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} 
+              disabled={loading}
+              onClick={handleFingerprintLogin}
+            >
+              <Fingerprint size={18} style={{ color: 'var(--cyan)' }} />
+              Sign in with Device Fingerprint
+            </button>
+          )}
         </form>
 
         {view === 'student' && (
@@ -1463,8 +1505,6 @@ const AdminDashboard = () => {
   const [importedFiles, setImportedFiles] = useState([]);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [currentlyVerifyingId, setCurrentlyVerifyingId] = useState(null);
-  const [selectedScanTokenId, setSelectedScanTokenId] = useState('');
-  const [rawQrInput, setRawQrInput] = useState('');
   const [scanResultModal, setScanResultModal] = useState({ show: false, granted: false, reason: '', studentName: '', roomNumber: '', block: '', tokenNumber: '', meal: '', redeemedAt: '' });
   const [cameraActive, setCameraActive] = useState(false);
   const [html5QrScanner, setHtml5QrScanner] = useState(null);
@@ -1817,23 +1857,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const verifyMealPass = async () => {
-    if (rawQrInput.trim()) {
-      await handleQrScan(rawQrInput.trim());
-      setRawQrInput('');
-    } else if (selectedScanTokenId) {
-      const match = tokens.find(t => String(t.id) === String(selectedScanTokenId));
-      if (match) {
-        const payload = JSON.stringify({
-          studentId: match.student_id,
-          tokenNumber: match.token_number,
-          token_for_date: match.token_for_date,
-          token_for_meal: match.token_for_meal
-        });
-        await handleQrScan(payload);
-      }
-    }
-  };
 
   const updateStatus = async (id, status) => {
     try { await apiPatch(`${API_BASE}/admin/student/${id}/status`,{status}); loadAll(); showMsg('success',`Status set to ${status}.`); }
@@ -2105,7 +2128,7 @@ const AdminDashboard = () => {
             
             <div className="panel-title" style={{ color: 'var(--cyan)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Shield size={16} /> WARDEN MEAL ENTRY PASS SECURE SCANNER
+                <Shield size={16} /> ADMIN MEAL ENTRY PASS SECURE SCANNER
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', background: 'rgba(0, 229, 255, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
                 Originality Verified
@@ -2115,7 +2138,7 @@ const AdminDashboard = () => {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '1rem 0' }}>
               <div style={{ textAlign: 'center', maxWidth: '480px', marginBottom: '0.5rem' }}>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>
-                  Warden scanning console. Click below to activate your camera and scan the student's meal pass QR code (from their dashboard) to verify entry.
+                  Admin scanning console. Click below to activate your camera and scan the student's meal pass QR code (from their dashboard) to verify entry.
                 </p>
               </div>
               

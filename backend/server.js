@@ -614,6 +614,51 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Device Fingerprint Auto-Login
+app.post('/api/auth/login-fingerprint', async (req, res) => {
+  try {
+    const { userId, fingerprint } = req.body;
+    if (!userId || !fingerprint) return res.status(400).json({ error: 'User ID and fingerprint are required.' });
+
+    const student = await Student.findByPk(userId);
+    if (!student) return res.status(404).json({ error: 'User not found.' });
+
+    if (student.device_fingerprint !== fingerprint) {
+      return res.status(401).json({ error: 'Biometric/Device fingerprint verification failed.' });
+    }
+
+    if (student.status === 'Pending') return res.status(403).json({ error: 'Account pending admin verification.' });
+    if (student.status === 'Suspended') return res.status(403).json({ error: 'Account suspended. Contact admin.' });
+    if (student.status === 'Left Hostel') return res.status(403).json({ error: 'Account disabled. You have left the hostel.' });
+
+    const token = jwt.sign({ id: student.id, role: student.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      success: true,
+      message: 'Fingerprint verified successfully.',
+      token,
+      user: {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        room_number: student.room_number,
+        block: student.block,
+        role: student.role
+      }
+    });
+  } catch (err) {
+    console.error('Fingerprint login failed:', err);
+    return res.status(500).json({ error: 'Server error during fingerprint login.' });
+  }
+});
+
 // Forgot Password Request OTP
 app.post('/api/auth/forgot-password', async (req, res) => {
   try {

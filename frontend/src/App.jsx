@@ -4,8 +4,9 @@ import {
   User, Lock, Phone, Mail, Home, Shield, LogOut, CheckCircle, XCircle, 
   AlertTriangle, RefreshCw, Search, Filter, Calendar, Users, 
   CalendarDays, Award, Clock, FileSpreadsheet, FileText, ShieldAlert, Key, Utensils,
-  Eye, EyeOff, Sun, Moon, Upload
+  Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff
 } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : 'https://jss-hostel-backend.vercel.app/api');
@@ -1465,6 +1466,8 @@ const AdminDashboard = () => {
   const [selectedScanTokenId, setSelectedScanTokenId] = useState('');
   const [rawQrInput, setRawQrInput] = useState('');
   const [scanResultModal, setScanResultModal] = useState({ show: false, granted: false, reason: '', studentName: '', roomNumber: '', block: '', tokenNumber: '', meal: '', redeemedAt: '' });
+  const [cameraActive, setCameraActive] = useState(false);
+  const [html5QrScanner, setHtml5QrScanner] = useState(null);
   const navigate = useNavigate();
 
   const hmsToken = () => sessionStorage.getItem('hms_token');
@@ -1569,6 +1572,49 @@ const AdminDashboard = () => {
 
   useEffect(()=>{ loadAll(); loadRoster(rosterDate); },[]);
   useEffect(()=>{ loadRoster(rosterDate); },[rosterDate]);
+
+  useEffect(() => {
+    let qrScanner = null;
+    if (cameraActive) {
+      const startCamera = async () => {
+        try {
+          qrScanner = new Html5Qrcode('qr-reader');
+          setHtml5QrScanner(qrScanner);
+          await qrScanner.start(
+            { facingMode: 'environment' },
+            {
+              fps: 15,
+              qrbox: { width: 250, height: 250 }
+            },
+            async (decodedText) => {
+              setCameraActive(false);
+              await handleQrScan(decodedText);
+            },
+            () => {}
+          );
+        } catch (err) {
+          console.error('Failed to start camera:', err);
+          showMsg('error', 'Camera access failed or permission denied.');
+          setCameraActive(false);
+        }
+      };
+      
+      const timer = setTimeout(startCamera, 300);
+      return () => {
+        clearTimeout(timer);
+        if (qrScanner && qrScanner.isScanning) {
+          qrScanner.stop().catch(console.error);
+        }
+      };
+    } else {
+      if (html5QrScanner) {
+        if (html5QrScanner.isScanning) {
+          html5QrScanner.stop().catch(console.error);
+        }
+        setHtml5QrScanner(null);
+      }
+    }
+  }, [cameraActive]);
 
   const setToday = () => { const d=new Date().toISOString().split('T')[0]; setRosterDate(d); };
   const setTomorrow = () => { const d=new Date(Date.now()+86400000).toISOString().split('T')[0]; setRosterDate(d); };
@@ -1681,37 +1727,52 @@ const AdminDashboard = () => {
     }
   };
 
-  const verifyMealPass = async () => {
-    let tokenData = null;
-
-    if (rawQrInput.trim()) {
-      try {
-        tokenData = JSON.parse(rawQrInput.trim());
-      } catch (e) {
-        setScanResultModal({
-          show: true,
-          granted: false,
-          reason: 'Invalid QR Code structure. Could not parse JSON.'
-        });
-        return;
+  const playBeep = (type) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      if (type === 'success') {
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.15);
+      } else {
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.stop(ctx.currentTime + 0.3);
       }
-    } else if (selectedScanTokenId) {
-      const match = tokens.find(t => String(t.id) === String(selectedScanTokenId));
-      if (match) {
-        tokenData = {
-          studentId: match.student_id,
-          tokenNumber: match.token_number,
-          token_for_date: match.token_for_date,
-          token_for_meal: match.token_for_meal
-        };
-      }
+    } catch (e) {
+      console.error('Audio beep failed:', e);
     }
+  };
 
-    if (!tokenData || !tokenData.studentId || !tokenData.tokenNumber) {
+  const handleQrScan = async (scannedString) => {
+    let tokenData = null;
+    try {
+      tokenData = JSON.parse(scannedString.trim());
+    } catch (e) {
+      playBeep('error');
       setScanResultModal({
         show: true,
         granted: false,
-        reason: 'No valid token pass selected or scanned.'
+        reason: 'Invalid pass code structure. Could not parse QR payload.'
+      });
+      return;
+    }
+
+    if (!tokenData || !tokenData.studentId || !tokenData.tokenNumber) {
+      playBeep('error');
+      setScanResultModal({
+        show: true,
+        granted: false,
+        reason: 'No valid token pass data found in QR payload.'
       });
       return;
     }
@@ -1725,6 +1786,7 @@ const AdminDashboard = () => {
       });
 
       if (res.success) {
+        playBeep('success');
         setScanResultModal({
           show: true,
           granted: true,
@@ -1734,22 +1796,42 @@ const AdminDashboard = () => {
           tokenNumber: res.tokenNumber,
           meal: res.meal
         });
-        loadAll(); // Reload to update redeemed status in tokens list
+        loadAll();
       } else {
+        playBeep('error');
         setScanResultModal({
           show: true,
           granted: false,
-          reason: res.reason,
+          reason: res.reason || 'Verification failed.',
           studentName: res.studentName,
           redeemedAt: res.redeemedAt
         });
       }
     } catch (e) {
+      playBeep('error');
       setScanResultModal({
         show: true,
         granted: false,
         reason: e.message || 'Pass check failed. Database connection error.'
       });
+    }
+  };
+
+  const verifyMealPass = async () => {
+    if (rawQrInput.trim()) {
+      await handleQrScan(rawQrInput.trim());
+      setRawQrInput('');
+    } else if (selectedScanTokenId) {
+      const match = tokens.find(t => String(t.id) === String(selectedScanTokenId));
+      if (match) {
+        const payload = JSON.stringify({
+          studentId: match.student_id,
+          tokenNumber: match.token_number,
+          token_for_date: match.token_for_date,
+          token_for_meal: match.token_for_meal
+        });
+        await handleQrScan(payload);
+      }
     }
   };
 
@@ -2011,76 +2093,164 @@ const AdminDashboard = () => {
                   )}
                 </div>
               </div>
+            </div>          {/* Meal Entry Pass Scanner Simulator */}
+          <div className="panel-card" style={{ marginBottom: '1.75rem', border: '1px solid rgba(0, 229, 255, 0.25)', position: 'relative' }}>
+            <style>{`
+              @keyframes scanLine {
+                0% { top: 0%; }
+                50% { top: 100%; }
+                100% { top: 0%; }
+              }
+            `}</style>
+            
+            <div className="panel-title" style={{ color: 'var(--cyan)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Shield size={16} /> WARDEN MEAL ENTRY PASS SECURE SCANNER
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', background: 'rgba(0, 229, 255, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
+                Originality Verified
+              </div>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '2rem', alignItems: 'start' }}>
+              
+              {/* Left Side: Real-time Camera Scanner */}
+              <div style={{ borderRight: '1px solid rgba(255,255,255,0.06)', paddingRight: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text)', width: '100%' }}>Camera QR Scanner</h4>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', marginBottom: '1rem', width: '100%' }}>
+                  Tap below to use your device's camera to scan a student's meal pass QR code instantly.
+                </p>
+                
+                {cameraActive ? (
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                    <div 
+                      id="qr-reader" 
+                      style={{ 
+                        width: '100%', 
+                        maxWidth: '280px', 
+                        aspectRatio: '1', 
+                        borderRadius: '12px', 
+                        overflow: 'hidden', 
+                        border: '2px solid var(--cyan)',
+                        boxShadow: '0 0 20px rgba(0, 229, 255, 0.25)',
+                        position: 'relative'
+                      }}
+                    >
+                      {/* Scanning crosshair micro-animation */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0,
+                        height: '2px',
+                        background: 'var(--cyan)',
+                        boxShadow: '0 0 10px var(--cyan)',
+                        animation: 'scanLine 2s linear infinite',
+                        zIndex: 1
+                      }} />
+                    </div>
+                    
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ padding: '0.65rem 1.5rem', display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'var(--red)', color: 'var(--red)' }}
+                      onClick={() => setCameraActive(false)}
+                    >
+                      <CameraOff size={15} /> Close Camera Scanner
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    style={{ 
+                      width: '100%', 
+                      maxWidth: '280px', 
+                      aspectRatio: '1.2', 
+                      background: 'rgba(0,0,0,0.25)', 
+                      border: '1px dashed rgba(0, 229, 255, 0.3)', 
+                      borderRadius: '12px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setCameraActive(true)}
+                  >
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 229, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)' }}>
+                      <Camera size={22} />
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--cyan)', fontWeight: 700 }}>Tap to Activate Scanner Camera</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Side: Keyboard/Hardware Gun Input */}
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                <div>
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Hardware Scanner / Paste Input</h4>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', marginBottom: '1rem' }}>
+                    Place your cursor inside the field below to scan directly using a handheld QR scanner gun, or paste the QR payload.
+                  </p>
+                  
+                  <div className="input-group" style={{ marginBottom: '1rem' }}>
+                    <input 
+                      type="text" 
+                      className="input-field" 
+                      placeholder='Click here to scan or paste token data...'
+                      style={{ fontSize: '0.8rem', padding: '0.8rem' }} 
+                      value={rawQrInput}
+                      onChange={e => setRawQrInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (rawQrInput.trim()) {
+                            handleQrScan(rawQrInput.trim());
+                            setRawQrInput('');
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  
+                  {rawQrInput.trim() && (
+                    <button 
+                      className="btn btn-cyan" 
+                      style={{ width: '100%', padding: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1rem' }}
+                      onClick={verifyMealPass}
+                    >
+                      <Shield size={15} /> Verify Scanned Payload
+                    </button>
+                  )}
+                </div>
+
+                {/* Simulation Shortcut Helper for Dev/Demo */}
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.75rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontWeight: 700, marginBottom: '0.5rem', textTransform: 'uppercase' }}>Simulation Shortcut</div>
+                  <div className="input-group" style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select 
+                      className="input-field" 
+                      style={{ fontSize: '0.75rem', padding: '0.45rem', flex: 1 }} 
+                      value={selectedScanTokenId} 
+                      onChange={e => setSelectedScanTokenId(e.target.value)}
+                    >
+                      <option value="">-- Choose Resident Pass --</option>
+                      {tokens.map(t => (
+                        <option key={t.id} value={t.id}>
+                          Token #{t.token_number} - {t.Student?.name || t.student_id} {t.is_redeemed ? ' (Redeemed)' : ' (Active)'}
+                        </option>
+                      ))}
+                    </select>
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ padding: '0.45rem 1rem', fontSize: '0.75rem', borderColor: 'rgba(0, 229, 255, 0.4)', color: 'var(--cyan)' }}
+                      onClick={verifyMealPass}
+                      disabled={!selectedScanTokenId}
+                    >
+                      Simulate
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* Meal Entry Pass Scanner Simulator */}
-          <div className="panel-card" style={{ marginBottom: '1.75rem', border: '1px solid rgba(0, 229, 255, 0.25)', position: 'relative' }}>
-            <div className="panel-title" style={{ color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Shield size={16} /> WARDEN MEAL ENTRY PASS SCANNER (SIMULATOR)
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div>
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Option A: Scan Active Student Pass</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', marginBottom: '0.75rem' }}>
-                  Simulate scanning by choosing a student with an active generated meal token from the dropdown list.
-                </p>
-                <div className="input-group">
-                  <select 
-                    className="input-field" 
-                    style={{ fontSize: '0.82rem', padding: '0.65rem' }} 
-                    value={selectedScanTokenId} 
-                    onChange={e => {
-                      setSelectedScanTokenId(e.target.value);
-                      setRawQrInput(''); // Clear raw QR input when selecting from dropdown
-                    }}
-                  >
-                    <option value="">-- Choose a Resident's Pass --</option>
-                    {tokens.map(t => (
-                      <option key={t.id} value={t.id}>
-                        Token #{t.token_number} - {t.Student?.name || t.student_id} {t.is_redeemed ? ' (Access Verified)' : ' (Active)'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button 
-                  className="btn btn-cyan" 
-                  style={{ width: '100%', padding: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                  onClick={verifyMealPass}
-                  disabled={!selectedScanTokenId}
-                >
-                  <Shield size={16} /> Scan Selected Pass
-                </button>
-              </div>
-
-              <div>
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Option B: Paste Raw Scanned QR Data</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', marginBottom: '0.75rem' }}>
-                  Paste the JSON string representing the student's meal pass QR code (from their dashboard).
-                </p>
-                <div className="input-group" style={{ marginBottom: '0.5rem' }}>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder='Paste JSON data e.g. {"studentId":"std1001", "tokenNumber": 15...}'
-                    style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }} 
-                    value={rawQrInput}
-                    onChange={e => {
-                      setRawQrInput(e.target.value);
-                      setSelectedScanTokenId(''); // Clear dropdown when pasting raw code
-                    }}
-                  />
-                </div>
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ width: '100%', padding: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1px solid rgba(0, 229, 255, 0.3)', color: 'var(--cyan)' }}
-                  onClick={verifyMealPass}
-                  disabled={!rawQrInput.trim()}
-                >
-                  <ShieldAlert size={16} /> Parse & Scan Code
-                </button>
-              </div>
-            </div>
 
             {/* SCAN RESULT MODAL OVERLAY (ACCESS GRANTED / ACCESS DENIED) */}
             {scanResultModal.show && (

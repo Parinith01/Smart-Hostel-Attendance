@@ -8,7 +8,10 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const databaseUrl = process.env.DATABASE_URL || 'postgres://postgres.rbdbzsivydeeujorxzba:Parinith%401947@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres';
+let databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl || databaseUrl.includes('db.rbdbzsivydeeujorxzba.supabase.co')) {
+  databaseUrl = 'postgres://postgres.rbdbzsivydeeujorxzba:Parinith%401947@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres';
+}
 let sequelize;
 
 if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {

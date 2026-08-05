@@ -610,7 +610,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   } catch (err) {
     console.error('Login failed:', err);
-    return res.status(500).json({ error: 'Server error during login.', message: err.message, stack: err.stack });
+    return res.status(500).json({ error: 'Server error during login.' });
   }
 });
 

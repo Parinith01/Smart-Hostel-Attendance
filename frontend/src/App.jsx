@@ -7,6 +7,7 @@ import {
   Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff, Fingerprint
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : 'https://jss-hostel-backend.vercel.app/api');
@@ -203,25 +204,45 @@ const Login = () => {
   };
 
   const handleFingerprintLogin = async () => {
-    if (!userId) return setError('Please enter your Student ID first to login with fingerprint.');
+    if (!userId) return setError('Please enter your Student ID first to login with biometric fingerprint.');
     setError('');
     setLoading(true);
 
     try {
-      const fingerprint = getDeviceFingerprint();
-      const res = await fetch(`${API_BASE}/auth/login-fingerprint`, {
+      // 1. Get Authentication Options from server
+      const optRes = await fetch(`${API_BASE}/auth/webauthn/login-options`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, fingerprint })
+        body: JSON.stringify({ userId })
       });
-      const data = await res.json();
+      const options = await optRes.json();
       
-      if (!res.ok) {
-        throw new Error(data.error || 'Fingerprint verification failed.');
+      if (!optRes.ok) {
+        throw new Error(options.error || 'Failed to get biometric options. Have you registered this device?');
       }
 
-      sessionStorage.setItem('hms_user', JSON.stringify(data.user));
-      sessionStorage.setItem('hms_token', data.token);
+      // 2. Trigger native biometric prompt
+      let asseResp;
+      try {
+        asseResp = await startAuthentication(options);
+      } catch (e) {
+        throw new Error('Biometric prompt cancelled or failed.');
+      }
+
+      // 3. Verify Authentication Response on server
+      const verifyRes = await fetch(`${API_BASE}/auth/webauthn/login-verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, response: asseResp })
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyRes.ok) {
+        throw new Error(verifyData.error || 'Biometric verification failed.');
+      }
+
+      sessionStorage.setItem('hms_user', JSON.stringify(verifyData.user));
+      sessionStorage.setItem('hms_token', verifyData.token);
       
       navigate('/student');
     } catch (err) {
@@ -1204,7 +1225,7 @@ const StudentDashboard = () => {
           {[
             { id: 'attendance', label: 'Attendance', icon: <Utensils size={14} style={{ marginRight: '6px' }} /> },
             { id: 'leave', label: 'Leave', icon: <CalendarDays size={14} style={{ marginRight: '6px' }} /> },
-            { id: 'password', label: 'Password', icon: <Lock size={14} style={{ marginRight: '6px' }} /> }
+            { id: 'password', label: 'Security', icon: <Shield size={14} style={{ marginRight: '6px' }} /> }
           ].map((t) => (
             <button 
               key={t.id} 

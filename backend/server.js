@@ -25,10 +25,12 @@ import {
   AllowedEmail,
   SystemConfig,
   AttendanceVerification,
-  MealToken
+  MealToken,
+  WebAuthnCredential
 } from './database.js';
 import { sendOtpEmail } from './mockMailer.js';
 import { generateDailyRosterPDF, generateMonthlySummaryPDF } from './pdfGenerator.js';
+import { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse } from '@simplewebauthn/server';
 
 dotenv.config();
 
@@ -613,49 +615,192 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(500).json({ error: 'Server error during login.' });
   }
 });
+// --- WEBAUTHN BIOMETRIC ENDPOINTS ---
 
-// Device Fingerprint Auto-Login
-app.post('/api/auth/login-fingerprint', async (req, res) => {
+const rpName = 'JSS Hostel Hub';
+const rpID = process.env.NODE_ENV === 'production' ? 'jss-hostel-backend.vercel.app' : 'localhost'; // Should match domain
+const origin = process.env.NODE_ENV === 'production' ? 'https://jss-hostel-backend.vercel.app' : 'http://localhost:5173';
+
+// 1. Get Registration Options
+app.post('/api/auth/webauthn/register-options', async (req, res) => {
   try {
-    const { userId, fingerprint } = req.body;
-    if (!userId || !fingerprint) return res.status(400).json({ error: 'User ID and fingerprint are required.' });
-
+    const { userId } = req.body;
     const student = await Student.findByPk(userId);
     if (!student) return res.status(404).json({ error: 'User not found.' });
 
-    if (student.device_fingerprint !== fingerprint) {
-      return res.status(401).json({ error: 'Biometric/Device fingerprint verification failed.' });
+    // Retrieve existing credentials to prevent re-registration
+    const userCredentials = await WebAuthnCredential.findAll({ where: { student_id: userId } });
+
+    const options = await generateRegistrationOptions({
+      rpName,
+      rpID,
+      userID: Buffer.from(student.id),
+      userName: student.email || student.id,
+      attestationType: 'none',
+      excludeCredentials: userCredentials.map(cred => ({
+        id: Buffer.from(cred.id, 'base64url'),
+        type: 'public-key'
+      })),
+      authenticatorSelection: {
+        residentKey: 'preferred',
+        userVerification: 'preferred',
+        authenticatorAttachment: 'platform' // Forces device bound (e.g. TouchID/FaceID/Windows Hello)
+      },
+    });
+
+    student.webauthn_current_challenge = options.challenge;
+    await student.save();
+
+    res.json(options);
+  } catch (err) {
+    console.error('Registration options error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Verify Registration
+app.post('/api/auth/webauthn/register-verify', async (req, res) => {
+  try {
+    const { userId, response } = req.body;
+    const student = await Student.findByPk(userId);
+    
+    if (!student || !student.webauthn_current_challenge) {
+      return res.status(400).json({ error: 'No active registration challenge found.' });
     }
 
-    if (student.status === 'Pending') return res.status(403).json({ error: 'Account pending admin verification.' });
-    if (student.status === 'Suspended') return res.status(403).json({ error: 'Account suspended. Contact admin.' });
-    if (student.status === 'Left Hostel') return res.status(403).json({ error: 'Account disabled. You have left the hostel.' });
-
-    const token = jwt.sign({ id: student.id, role: student.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
-
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+    const verification = await verifyRegistrationResponse({
+      response,
+      expectedChallenge: student.webauthn_current_challenge,
+      expectedOrigin: [origin, 'https://jss-hostel-attendance.vercel.app'],
+      expectedRPID: ['jss-hostel-backend.vercel.app', 'jss-hostel-attendance.vercel.app', 'localhost']
     });
 
-    return res.json({
-      success: true,
-      message: 'Fingerprint verified successfully.',
-      token,
-      user: {
-        id: student.id,
-        name: student.name,
-        email: student.email,
-        room_number: student.room_number,
-        block: student.block,
-        role: student.role
+    if (verification.verified && verification.registrationInfo) {
+      const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
+      
+      // Save the credential
+      await WebAuthnCredential.create({
+        id: Buffer.from(credentialID).toString('base64url'),
+        student_id: student.id,
+        public_key: Buffer.from(credentialPublicKey).toString('base64url'),
+        counter
+      });
+
+      // Clear challenge
+      student.webauthn_current_challenge = null;
+      await student.save();
+
+      return res.json({ success: true });
+    }
+    
+    return res.status(400).json({ error: 'Verification failed.' });
+  } catch (err) {
+    console.error('Registration verify error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Get Login Options
+app.post('/api/auth/webauthn/login-options', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const student = await Student.findByPk(userId);
+    if (!student) return res.status(404).json({ error: 'User not found.' });
+
+    const userCredentials = await WebAuthnCredential.findAll({ where: { student_id: userId } });
+    if (userCredentials.length === 0) {
+      return res.status(404).json({ error: 'No biometric credentials found for this user.' });
+    }
+
+    const options = await generateAuthenticationOptions({
+      rpID,
+      allowCredentials: userCredentials.map(cred => ({
+        id: Buffer.from(cred.id, 'base64url'),
+        type: 'public-key'
+      })),
+      userVerification: 'preferred'
+    });
+
+    student.webauthn_current_challenge = options.challenge;
+    await student.save();
+
+    res.json(options);
+  } catch (err) {
+    console.error('Login options error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Verify Login
+app.post('/api/auth/webauthn/login-verify', async (req, res) => {
+  try {
+    const { userId, response } = req.body;
+    const student = await Student.findByPk(userId);
+    
+    if (!student || !student.webauthn_current_challenge) {
+      return res.status(400).json({ error: 'No active authentication challenge found.' });
+    }
+
+    // Find the credential being used
+    const credId = response.id;
+    const credential = await WebAuthnCredential.findOne({ where: { id: credId, student_id: userId } });
+    
+    if (!credential) {
+      return res.status(400).json({ error: 'Credential not recognized.' });
+    }
+
+    const verification = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge: student.webauthn_current_challenge,
+      expectedOrigin: [origin, 'https://jss-hostel-attendance.vercel.app'],
+      expectedRPID: ['jss-hostel-backend.vercel.app', 'jss-hostel-attendance.vercel.app', 'localhost'],
+      authenticator: {
+        credentialID: Buffer.from(credential.id, 'base64url'),
+        credentialPublicKey: Buffer.from(credential.public_key, 'base64url'),
+        counter: Number(credential.counter)
       }
     });
+
+    if (verification.verified) {
+      // Update counter
+      credential.counter = verification.authenticationInfo.newCounter;
+      await credential.save();
+
+      // Clear challenge
+      student.webauthn_current_challenge = null;
+      await student.save();
+
+      // Ensure account is valid before issuing token
+      if (student.status === 'Pending') return res.status(403).json({ error: 'Account pending admin verification.' });
+      if (student.status === 'Suspended') return res.status(403).json({ error: 'Account suspended.' });
+      if (student.status === 'Left Hostel') return res.status(403).json({ error: 'Account disabled.' });
+
+      const token = jwt.sign({ id: student.id, role: student.role }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '7d' });
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
+
+      return res.json({
+        success: true,
+        token,
+        user: {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          room_number: student.room_number,
+          block: student.block,
+          role: student.role
+        }
+      });
+    }
+
+    return res.status(400).json({ error: 'Authentication failed.' });
   } catch (err) {
-    console.error('Fingerprint login failed:', err);
-    return res.status(500).json({ error: 'Server error during fingerprint login.' });
+    console.error('Login verify error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

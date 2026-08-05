@@ -390,10 +390,28 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-title); font-weight: 700; }
   .panels-grid { grid-template-columns:1fr; }
   .time-grid   { grid-template-columns:1fr 1fr; }
   .admin-content { padding:1rem; }
+  .sp-tabs { flex-wrap: wrap; }
+  .sp-tab { flex: 1 1 45%; }
+  /* Make tables horizontally scrollable */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
 }
 @media (max-width:480px) {
+  .page-container { padding: 1rem; }
   .kpi-grid { grid-template-columns:1fr; }
+  .time-grid { grid-template-columns:1fr; }
   .quick-btns { flex-wrap:wrap; }
+  .auth-card { padding: 1.5rem; width: 100%; box-sizing: border-box; }
+  .modal-panel { width: 95%; padding: 1.5rem; }
+  .round-token { width: 180px; height: 180px; }
+  /* Avoid keyboard hiding inputs */
+  .auth-card form { margin-bottom: 2rem; }
 }
 
 /* ══════════════════════════════════════════════════

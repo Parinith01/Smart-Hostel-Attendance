@@ -49,6 +49,7 @@ const Student = sequelize.define('Student', {
   suspicious_score: { type: DataTypes.INTEGER, defaultValue: 0 },
   registration_ip: { type: DataTypes.STRING(50), allowNull: true },
   device_fingerprint: { type: DataTypes.STRING(255), allowNull: true },
+  webauthn_current_challenge: { type: DataTypes.STRING(100), allowNull: true },
   joining_date: { type: DataTypes.DATE, defaultValue: Sequelize.NOW },
   leaving_date: { type: DataTypes.DATE, allowNull: true }
 }, { timestamps: true });
@@ -125,6 +126,15 @@ const MealToken = sequelize.define('MealToken', {
   redeemed_at: { type: DataTypes.DATE, allowNull: true }
 }, { timestamps: true });
 
+// WebAuthn Credentials
+const WebAuthnCredential = sequelize.define('WebAuthnCredential', {
+  id: { type: DataTypes.STRING, primaryKey: true }, // credentialID (base64url)
+  student_id: { type: DataTypes.STRING(50), allowNull: false },
+  public_key: { type: DataTypes.TEXT, allowNull: false },
+  counter: { type: DataTypes.BIGINT, defaultValue: 0 },
+  transports: { type: DataTypes.STRING, allowNull: true } // JSON string array
+});
+
 // ── Relationships ────────────────────────────────────────────
 
 Student.hasMany(AttendanceVote, { foreignKey: 'student_id', onDelete: 'CASCADE' });
@@ -142,8 +152,11 @@ AttendanceVerification.belongsTo(Student, { foreignKey: 'student_id' });
 Student.hasMany(MealToken, { foreignKey: 'student_id', onDelete: 'CASCADE' });
 MealToken.belongsTo(Student, { foreignKey: 'student_id' });
 
+Student.hasMany(WebAuthnCredential, { foreignKey: 'student_id', onDelete: 'CASCADE' });
+WebAuthnCredential.belongsTo(Student, { foreignKey: 'student_id' });
+
 export {
   sequelize,
   Student, OTPModel, AttendanceVote, Absence, LongLeave, Op,
-  AllowedEmail, SystemConfig, AttendanceVerification, MealToken
+  AllowedEmail, SystemConfig, AttendanceVerification, MealToken, WebAuthnCredential
 };

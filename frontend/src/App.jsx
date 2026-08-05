@@ -1445,7 +1445,7 @@ const StudentDashboard = () => {
             )}
           </>)}
 
-          {tab==='password' && (
+          {tab==='password' && (<>
             <div className="meal-card">
               <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'1rem',color:'var(--cyan)'}}>Change Password</div>
               <form onSubmit={changePassword}>
@@ -1488,10 +1488,62 @@ const StudentDashboard = () => {
                     </button>
                   </div>
                 </div>
-                <button className="btn btn-primary" style={{width:'100%', marginTop:'0.5rem'}}>Update Password</button>
+                <button type="submit" className="btn btn-primary" style={{width:'100%',marginTop:'.5rem'}}>Update Password</button>
               </form>
             </div>
-          )}
+
+            <div className="meal-card" style={{ marginTop: '1.5rem', border: '1px solid var(--cyan)' }}>
+              <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'.5rem',color:'var(--cyan)',display:'flex',alignItems:'center',gap:'6px'}}>
+                <Fingerprint size={16} /> Biometric & Device Fingerprint
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', marginBottom: '1rem' }}>
+                Register this device to allow instant, secure login using your Fingerprint, FaceID, or Windows Hello.
+              </p>
+              <button 
+                type="button"
+                className="btn btn-secondary" 
+                style={{ width: '100%', borderColor: 'var(--cyan)', color: 'var(--cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                onClick={async () => {
+                  try {
+                    setError('');
+                    setSuccess('');
+                    
+                    // 1. Get Registration Options
+                    const optRes = await fetch(`${API_BASE}/auth/webauthn/register-options`, {
+                      method: 'POST',
+                      headers: hdrs(),
+                      body: JSON.stringify({ userId: data.student.id })
+                    });
+                    const options = await optRes.json();
+                    if (!optRes.ok) throw new Error(options.error || 'Failed to get registration options');
+
+                    // 2. Start native biometric prompt
+                    let asseResp;
+                    try {
+                      asseResp = await startRegistration(options);
+                    } catch (e) {
+                      throw new Error('Biometric registration cancelled or failed.');
+                    }
+
+                    // 3. Verify Registration
+                    const verifyRes = await fetch(`${API_BASE}/auth/webauthn/register-verify`, {
+                      method: 'POST',
+                      headers: hdrs(),
+                      body: JSON.stringify({ userId: data.student.id, response: asseResp })
+                    });
+                    const verifyData = await verifyRes.json();
+                    if (!verifyRes.ok) throw new Error(verifyData.error || 'Verification failed on server.');
+
+                    setSuccess('Biometric login successfully registered for this device!');
+                  } catch (err) {
+                    setError(err.message);
+                  }
+                }}
+              >
+                <Fingerprint size={16} /> Register Biometric Login for this Device
+              </button>
+            </div>
+          </>)}
         </div>
       </div>
     </div>

@@ -2112,143 +2112,85 @@ const AdminDashboard = () => {
               </div>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '2rem', alignItems: 'start' }}>
-              
-              {/* Left Side: Real-time Camera Scanner */}
-              <div style={{ borderRight: '1px solid rgba(255,255,255,0.06)', paddingRight: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text)', width: '100%' }}>Camera QR Scanner</h4>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', marginBottom: '1rem', width: '100%' }}>
-                  Tap below to use your device's camera to scan a student's meal pass QR code instantly.
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '1rem 0' }}>
+              <div style={{ textAlign: 'center', maxWidth: '480px', marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>
+                  Warden scanning console. Click below to activate your camera and scan the student's meal pass QR code (from their dashboard) to verify entry.
                 </p>
-                
-                {cameraActive ? (
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                    <div 
-                      id="qr-reader" 
-                      style={{ 
-                        width: '100%', 
-                        maxWidth: '280px', 
-                        aspectRatio: '1', 
-                        borderRadius: '12px', 
-                        overflow: 'hidden', 
-                        border: '2px solid var(--cyan)',
-                        boxShadow: '0 0 20px rgba(0, 229, 255, 0.25)',
-                        position: 'relative'
-                      }}
-                    >
-                      {/* Scanning crosshair micro-animation */}
-                      <div style={{
-                        position: 'absolute',
-                        top: 0, left: 0, right: 0,
-                        height: '2px',
-                        background: 'var(--cyan)',
-                        boxShadow: '0 0 10px var(--cyan)',
-                        animation: 'scanLine 2s linear infinite',
-                        zIndex: 1
-                      }} />
-                    </div>
-                    
-                    <button 
-                      className="btn btn-secondary" 
-                      style={{ padding: '0.65rem 1.5rem', display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'var(--red)', color: 'var(--red)' }}
-                      onClick={() => setCameraActive(false)}
-                    >
-                      <CameraOff size={15} /> Close Camera Scanner
-                    </button>
-                  </div>
-                ) : (
+              </div>
+              
+              {cameraActive ? (
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
                   <div 
+                    id="qr-reader" 
                     style={{ 
                       width: '100%', 
-                      maxWidth: '280px', 
-                      aspectRatio: '1.2', 
-                      background: 'rgba(0,0,0,0.25)', 
-                      border: '1px dashed rgba(0, 229, 255, 0.3)', 
+                      maxWidth: '340px', 
+                      aspectRatio: '1', 
                       borderRadius: '12px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      gap: '0.75rem',
-                      cursor: 'pointer'
+                      overflow: 'hidden', 
+                      border: '2px solid var(--cyan)',
+                      boxShadow: '0 0 25px rgba(0, 229, 255, 0.3)',
+                      position: 'relative'
                     }}
-                    onClick={() => setCameraActive(true)}
                   >
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 229, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)' }}>
-                      <Camera size={22} />
-                    </div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--cyan)', fontWeight: 700 }}>Tap to Activate Scanner Camera</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Side: Keyboard/Hardware Gun Input */}
-              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
-                <div>
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Hardware Scanner / Paste Input</h4>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', marginBottom: '1rem' }}>
-                    Place your cursor inside the field below to scan directly using a handheld QR scanner gun, or paste the QR payload.
-                  </p>
-                  
-                  <div className="input-group" style={{ marginBottom: '1rem' }}>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      placeholder='Click here to scan or paste token data...'
-                      style={{ fontSize: '0.8rem', padding: '0.8rem' }} 
-                      value={rawQrInput}
-                      onChange={e => setRawQrInput(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (rawQrInput.trim()) {
-                            handleQrScan(rawQrInput.trim());
-                            setRawQrInput('');
-                          }
-                        }
-                      }}
-                    />
+                    {/* Scanning laser line micro-animation */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0,
+                      height: '2.5px',
+                      background: 'var(--cyan)',
+                      boxShadow: '0 0 12px var(--cyan)',
+                      animation: 'scanLine 2.5s linear infinite',
+                      zIndex: 1
+                    }} />
                   </div>
                   
-                  {rawQrInput.trim() && (
-                    <button 
-                      className="btn btn-cyan" 
-                      style={{ width: '100%', padding: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1rem' }}
-                      onClick={verifyMealPass}
-                    >
-                      <Shield size={15} /> Verify Scanned Payload
-                    </button>
-                  )}
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ padding: '0.75rem 2rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px', borderColor: 'var(--red)', color: 'var(--red)' }}
+                    onClick={() => setCameraActive(false)}
+                  >
+                    <CameraOff size={16} /> Deactivate Scanner Camera
+                  </button>
                 </div>
-
-                {/* Simulation Shortcut Helper for Dev/Demo */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.75rem' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-3)', fontWeight: 700, marginBottom: '0.5rem', textTransform: 'uppercase' }}>Simulation Shortcut</div>
-                  <div className="input-group" style={{ display: 'flex', gap: '0.5rem' }}>
-                    <select 
-                      className="input-field" 
-                      style={{ fontSize: '0.75rem', padding: '0.45rem', flex: 1 }} 
-                      value={selectedScanTokenId} 
-                      onChange={e => setSelectedScanTokenId(e.target.value)}
-                    >
-                      <option value="">-- Choose Resident Pass --</option>
-                      {tokens.map(t => (
-                        <option key={t.id} value={t.id}>
-                          Token #{t.token_number} - {t.Student?.name || t.student_id} {t.is_redeemed ? ' (Redeemed)' : ' (Active)'}
-                        </option>
-                      ))}
-                    </select>
-                    <button 
-                      className="btn btn-secondary" 
-                      style={{ padding: '0.45rem 1rem', fontSize: '0.75rem', borderColor: 'rgba(0, 229, 255, 0.4)', color: 'var(--cyan)' }}
-                      onClick={verifyMealPass}
-                      disabled={!selectedScanTokenId}
-                    >
-                      Simulate
-                    </button>
+              ) : (
+                <div 
+                  style={{ 
+                    width: '100%', 
+                    maxWidth: '340px', 
+                    aspectRatio: '1.3', 
+                    background: 'rgba(255,255,255,0.01)', 
+                    border: '1.5px dashed rgba(0, 229, 255, 0.35)', 
+                    borderRadius: '16px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '1rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: 'inset 0 0 15px rgba(0, 229, 255, 0.02)'
+                  }}
+                  onClick={() => setCameraActive(true)}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--cyan)';
+                    e.currentTarget.style.boxShadow = 'inset 0 0 25px rgba(0, 229, 255, 0.05), 0 0 15px rgba(0, 229, 255, 0.1)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.35)';
+                    e.currentTarget.style.boxShadow = 'inset 0 0 15px rgba(0, 229, 255, 0.02)';
+                  }}
+                >
+                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(0, 229, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)' }}>
+                    <Camera size={26} />
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.88rem', color: 'var(--cyan)', fontWeight: 800, display: 'block', marginBottom: '2px' }}>Start Camera Scanner</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Scan resident QR code passes</span>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

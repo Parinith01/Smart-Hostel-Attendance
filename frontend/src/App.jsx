@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 // API Configuration
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
 // Simple Alert Component
 const Alert = ({ type = 'info', children }) => {

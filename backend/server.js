@@ -635,22 +635,24 @@ app.post('/api/auth/webauthn/register-options', async (req, res) => {
     if (!student) return res.status(404).json({ error: 'User not found.' });
 
     // Retrieve existing credentials to prevent re-registration
-    const userCredentials = await WebAuthnCredential.findAll({ where: { student_id: userId } });
+    const userCredentials = await WebAuthnCredential.findAll({ where: { student_id: userId } }) || [];
 
+    if (!student.id) throw new Error("Student ID is missing");
+    
     const options = await generateRegistrationOptions({
       rpName,
       rpID,
-      userID: Buffer.from(student.id),
-      userName: student.email || student.id,
+      userID: new Uint8Array(Buffer.from(student.id || '')),
+      userName: student.email || student.id || 'unknown',
       attestationType: 'none',
       excludeCredentials: userCredentials.map(cred => ({
-        id: Buffer.from(cred.id, 'base64url'),
+        id: new Uint8Array(Buffer.from(cred.id || '', 'base64url')),
         type: 'public-key'
       })),
       authenticatorSelection: {
         residentKey: 'preferred',
         userVerification: 'preferred',
-        authenticatorAttachment: 'platform' // Forces device bound (e.g. TouchID/FaceID/Windows Hello)
+        authenticatorAttachment: 'platform'
       },
     });
 
@@ -723,7 +725,7 @@ app.post('/api/auth/webauthn/login-options', async (req, res) => {
     const options = await generateAuthenticationOptions({
       rpID,
       allowCredentials: userCredentials.map(cred => ({
-        id: Buffer.from(cred.id, 'base64url'),
+        id: new Uint8Array(Buffer.from(cred.id || '', 'base64url')),
         type: 'public-key'
       })),
       userVerification: 'preferred'
@@ -764,9 +766,9 @@ app.post('/api/auth/webauthn/login-verify', async (req, res) => {
       expectedOrigin: [origin],
       expectedRPID: [rpID],
       authenticator: {
-        credentialID: Buffer.from(credential.id, 'base64url'),
-        credentialPublicKey: Buffer.from(credential.public_key, 'base64url'),
-        counter: Number(credential.counter)
+        credentialID: new Uint8Array(Buffer.from(credential.id || '', 'base64url')),
+        credentialPublicKey: new Uint8Array(Buffer.from(credential.public_key || '', 'base64url')),
+        counter: Number(credential.counter || 0)
       }
     });
 

@@ -42,9 +42,7 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ──────────────────────────────────────────
-// Security Middleware
-// ──────────────────────────────────────────
+app.set('trust proxy', 1);
 
 // Helmet — sets secure HTTP response headers
 app.use(helmet({
@@ -52,23 +50,8 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.includes(origin) ||
-      origin.endsWith('.vercel.app')
-    ) {
-      return callback(null, true);
-    }
-    return callback(null, true);
-  },
+  origin: true,
   credentials: true
 }));
 app.use(express.json({ limit: '10kb' }));
@@ -541,6 +524,7 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 // Login Route
 app.post('/api/auth/login', async (req, res) => {
   try {
+    await seedAdminAccount();
     const { userId, password } = req.body;
 
     if (!userId || !password) {

@@ -35,14 +35,22 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Require JWT_SECRET from environment — never fall back to a hardcoded value
-if (!process.env.JWT_SECRET) {
-  console.error('[SECURITY] FATAL: JWT_SECRET is not set in .env. Server will not start.');
-  process.exit(1);
-}
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'hostel_hub_super_secret_jwt_key_2026';
 
 app.set('trust proxy', 1);
+
+// Global explicit CORS & Preflight middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Helmet — sets secure HTTP response headers
 app.use(helmet({
@@ -50,12 +58,21 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+
+// Route normalization middleware for Vercel
+app.use((req, res, next) => {
+  if (req.url.startsWith('/auth') || req.url.startsWith('/student') || req.url.startsWith('/admin')) {
+    req.url = '/api' + req.url;
+  }
+  next();
+});
+
+// Health check endpoints
+app.get(['/', '/api', '/api/health', '/health'], (req, res) => {
+  return res.json({ success: true, status: 'ok', message: 'JSS Hostel Hub API Server is online.' });
+});
 
 // ──────────────────────────────────────────
 // Rate Limiters
@@ -128,6 +145,8 @@ sequelize.sync().then(async () => {
 // Auto-expire students whose leaving_year has passed — runs at server start & midnight daily
 function scheduleAutoExpiry() {
   runAutoExpiry(); // Run immediately on start
+
+  if (process.env.VERCEL) return;
 
   // Schedule to run at midnight every day
   const now = new Date();

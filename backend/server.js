@@ -11,8 +11,9 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import xlsx from 'xlsx';
-import { PDFParse } from 'pdf-parse';
-const pdfParse = PDFParse;
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 import { 
   sequelize, 
   Student, 

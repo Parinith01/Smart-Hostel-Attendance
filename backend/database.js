@@ -8,7 +8,7 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:Parinith%401947@db.rbdbzsivydeeujorxzba.supabase.co:5432/postgres';
 let sequelize;
 
 if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
@@ -21,8 +21,12 @@ if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsW
     logging: false
   });
 } else {
-  console.log('No DATABASE_URL provided. Using memory storage fallback...');
-  sequelize = new Sequelize('sqlite::memory:', { logging: false });
+  sequelize = new Sequelize(databaseUrl, {
+    dialect: 'postgres',
+    dialectModule: pg,
+    dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+    logging: false
+  });
 }
 
 // ── Existing Models ──────────────────────────────────────────

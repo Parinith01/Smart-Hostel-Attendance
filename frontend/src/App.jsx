@@ -1522,7 +1522,8 @@ const StudentDashboard = () => {
                     try {
                       asseResp = await startRegistration(options);
                     } catch (e) {
-                      throw new Error('Biometric registration cancelled or failed.');
+                      console.error("WebAuthn Error:", e);
+                      throw new Error(`Biometric failed: ${e.message || e.name || 'Unknown error'}`);
                     }
 
                     // 3. Verify Registration

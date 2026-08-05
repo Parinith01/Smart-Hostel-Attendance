@@ -2307,8 +2307,10 @@ app.get('/api/admin/rebates/summary', requireAdmin, async (req, res) => {
   }
 });
 
-// Start Server
-if (!process.env.VERCEL) {
+import { fileURLToPath } from 'url';
+
+// Start Server if executed directly
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   app.listen(PORT, () => {
     console.log(`Hostel Backend running on port ${PORT}`);
   });

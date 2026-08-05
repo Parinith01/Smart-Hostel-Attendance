@@ -128,7 +128,12 @@ async function ensureDbSynced() {
   }
 }
 
-ensureDbSynced();
+app.use(async (req, res, next) => {
+  if (!isSynced) {
+    await ensureDbSynced();
+  }
+  next();
+});
 
 // Auto-expire students whose leaving_year has passed — runs at server start & midnight daily
 function scheduleAutoExpiry() {

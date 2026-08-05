@@ -627,6 +627,10 @@ function getWebAuthnConfig(req) {
 }
 
 // 1. Get Registration Options
+app.get('/api/ping', (req, res) => {
+  res.json({ pong: 'version-with-uint8array-fix-v3' });
+});
+
 app.post('/api/auth/webauthn/register-options', async (req, res) => {
   try {
     const { userId } = req.body;

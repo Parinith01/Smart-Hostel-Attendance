@@ -685,14 +685,16 @@ app.post('/api/auth/webauthn/register-verify', async (req, res) => {
     });
 
     if (verification.verified && verification.registrationInfo) {
-      const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
+      // In @simplewebauthn/server v10+, credential info is nested under .credential
+      const cred = verification.registrationInfo.credential || verification.registrationInfo;
+      const { id: credentialID, publicKey: credentialPublicKey, counter } = cred;
       
       // Save the credential
       await WebAuthnCredential.create({
-        id: Buffer.from(credentialID).toString('base64url'),
+        id: Buffer.isBuffer(credentialID) || credentialID instanceof Uint8Array ? Buffer.from(credentialID).toString('base64url') : credentialID,
         student_id: student.id,
-        public_key: Buffer.from(credentialPublicKey).toString('base64url'),
-        counter
+        public_key: Buffer.isBuffer(credentialPublicKey) || credentialPublicKey instanceof Uint8Array ? Buffer.from(credentialPublicKey).toString('base64url') : credentialPublicKey,
+        counter: counter || 0
       });
 
       // Clear challenge
@@ -772,9 +774,9 @@ app.post('/api/auth/webauthn/login-verify', async (req, res) => {
       }
     });
 
-    if (verification.verified) {
+    if (verification.verified && verification.authenticationInfo) {
       // Update counter
-      credential.counter = verification.authenticationInfo.newCounter;
+      credential.counter = verification.authenticationInfo.newCounter || 0;
       await credential.save();
 
       // Clear challenge

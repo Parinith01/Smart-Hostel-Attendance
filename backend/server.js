@@ -618,8 +618,8 @@ app.post('/api/auth/login', async (req, res) => {
 // --- WEBAUTHN BIOMETRIC ENDPOINTS ---
 
 const rpName = 'JSS Hostel Hub';
-const rpID = process.env.NODE_ENV === 'production' ? 'jss-hostel-backend.vercel.app' : 'localhost'; // Should match domain
-const origin = process.env.NODE_ENV === 'production' ? 'https://jss-hostel-backend.vercel.app' : 'http://localhost:5173';
+const rpID = process.env.NODE_ENV === 'production' ? 'smart-hostel-attendance.vercel.app' : 'localhost'; 
+const origin = process.env.NODE_ENV === 'production' ? 'https://smart-hostel-attendance.vercel.app' : 'http://localhost:5173';
 
 // 1. Get Registration Options
 app.post('/api/auth/webauthn/register-options', async (req, res) => {
@@ -671,8 +671,8 @@ app.post('/api/auth/webauthn/register-verify', async (req, res) => {
     const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: student.webauthn_current_challenge,
-      expectedOrigin: [origin, 'https://jss-hostel-attendance.vercel.app'],
-      expectedRPID: ['jss-hostel-backend.vercel.app', 'jss-hostel-attendance.vercel.app', 'localhost']
+      expectedOrigin: [origin, 'https://smart-hostel-attendance.vercel.app'],
+      expectedRPID: ['smart-hostel-backend.vercel.app', 'smart-hostel-attendance.vercel.app', 'localhost']
     });
 
     if (verification.verified && verification.registrationInfo) {
@@ -752,8 +752,8 @@ app.post('/api/auth/webauthn/login-verify', async (req, res) => {
     const verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge: student.webauthn_current_challenge,
-      expectedOrigin: [origin, 'https://jss-hostel-attendance.vercel.app'],
-      expectedRPID: ['jss-hostel-backend.vercel.app', 'jss-hostel-attendance.vercel.app', 'localhost'],
+      expectedOrigin: [origin, 'https://smart-hostel-attendance.vercel.app'],
+      expectedRPID: ['smart-hostel-backend.vercel.app', 'smart-hostel-attendance.vercel.app', 'localhost'],
       authenticator: {
         credentialID: Buffer.from(credential.id, 'base64url'),
         credentialPublicKey: Buffer.from(credential.public_key, 'base64url'),

@@ -9,11 +9,10 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const multer = require('multer');
-const xlsx = require('xlsx');
-const pdfParse = require('pdf-parse');
+import multer from 'multer';
+import xlsx from 'xlsx';
+import { PDFParse } from 'pdf-parse';
+const pdfParse = PDFParse;
 import { 
   sequelize, 
   Student, 

@@ -709,7 +709,7 @@ app.post('/api/auth/webauthn/login-options', async (req, res) => {
 
     const userCredentials = await WebAuthnCredential.findAll({ where: { student_id: userId } });
     if (userCredentials.length === 0) {
-      return res.status(404).json({ error: 'No biometric credentials found for this user.' });
+      return res.status(404).json({ error: 'No fingerprint registered. Please log in with your password first, go to the Security tab, and register your device.' });
     }
 
     const options = await generateAuthenticationOptions({

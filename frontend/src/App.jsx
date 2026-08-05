@@ -1512,7 +1512,7 @@ const StudentDashboard = () => {
                     const optRes = await fetch(`${API_BASE}/auth/webauthn/register-options`, {
                       method: 'POST',
                       headers: hdrs(),
-                      body: JSON.stringify({ userId: data.student.id })
+                      body: JSON.stringify({ userId: data.profile.id })
                     });
                     const options = await optRes.json();
                     if (!optRes.ok) throw new Error(options.error || 'Failed to get registration options');
@@ -1529,7 +1529,7 @@ const StudentDashboard = () => {
                     const verifyRes = await fetch(`${API_BASE}/auth/webauthn/register-verify`, {
                       method: 'POST',
                       headers: hdrs(),
-                      body: JSON.stringify({ userId: data.student.id, response: asseResp })
+                      body: JSON.stringify({ userId: data.profile.id, response: asseResp })
                     });
                     const verifyData = await verifyRes.json();
                     if (!verifyRes.ok) throw new Error(verifyData.error || 'Verification failed on server.');

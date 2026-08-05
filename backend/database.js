@@ -1,4 +1,5 @@
 import { Sequelize, DataTypes, Op } from 'sequelize';
+import pg from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -14,6 +15,7 @@ if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsW
   console.log('Connecting to PostgreSQL database...');
   sequelize = new Sequelize(databaseUrl, {
     dialect: 'postgres',
+    dialectModule: pg,
     protocol: 'postgres',
     dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
     logging: false

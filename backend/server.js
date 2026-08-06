@@ -214,13 +214,16 @@ async function runAutoExpiry() {
 // Seed an Admin Account if none exists
 async function seedAdminAccount() {
   try {
-    const adminExists = await Student.findOne({ where: { role: 'admin' } });
+    // Remove old default admin if it still exists
+    await Student.destroy({ where: { id: 'adm9999' } }).catch(() => {});
+    
+    const adminExists = await Student.findOne({ where: { id: 'jsshostel' } });
     if (!adminExists) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const hashedPassword = await bcrypt.hash('jss1#@1947', 10);
       await Student.create({
-        id: 'adm9999',
+        id: 'jsshostel',
         name: 'System Admin',
-        email: 'admin@hostelportal.com',
+        email: 'admin@jsshostel.com',
         phone: '9999999999',
         room_number: 'A-001',
         block: 'Admin Block',
@@ -231,7 +234,7 @@ async function seedAdminAccount() {
         registration_ip: '127.0.0.1',
         device_fingerprint: 'sys-admin-fingerprint'
       });
-      console.log('Admin account seeded: ID "adm9999", Password "admin123"');
+      console.log('Admin account seeded: ID "jsshostel"');
     }
   } catch (err) {
     console.error('Failed to seed admin account:', err);

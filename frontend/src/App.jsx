@@ -386,9 +386,9 @@ const Login = () => {
                 className="input-field"
                 style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
                 value={password}
-                onChange={(e) => setPassword(e.target.value.substring(0, 8))}
+                onChange={(e) => setPassword(e.target.value.substring(0, 12))}
                 placeholder="Password"
-                maxLength={8}
+                maxLength={12}
                 required
               />
               <button 
@@ -632,9 +632,9 @@ const Register = () => {
                 className="input-field"
                 style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value.substring(0, 8)})}
-                placeholder="8 characters max"
-                maxLength={8}
+                onChange={(e) => setFormData({...formData, password: e.target.value.substring(0, 12)})}
+                placeholder="12 characters max"
+                maxLength={12}
                 required
               />
               <button 
@@ -657,9 +657,9 @@ const Register = () => {
                 className="input-field"
                 style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
                 value={formData.confirmPassword}
-                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value.substring(0, 8)})}
+                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value.substring(0, 12)})}
                 placeholder="Confirm Password"
-                maxLength={8}
+                maxLength={12}
                 required
               />
               <button 
@@ -974,9 +974,9 @@ const ForgotPassword = () => {
                   className="input-field"
                   style={{ paddingRight: '2.5rem' }}
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value.substring(0, 8))}
+                  onChange={(e) => setNewPassword(e.target.value.substring(0, 12))}
                   placeholder="New Password"
-                  maxLength={8}
+                  maxLength={12}
                   autoComplete="new-password"
                   required
                 />
@@ -998,9 +998,9 @@ const ForgotPassword = () => {
                   className="input-field"
                   style={{ paddingRight: '2.5rem' }}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value.substring(0, 8))}
+                  onChange={(e) => setConfirmPassword(e.target.value.substring(0, 12))}
                   placeholder="Confirm New Password"
-                  maxLength={8}
+                  maxLength={12}
                   autoComplete="new-password"
                   required
                 />
@@ -1457,7 +1457,7 @@ const StudentDashboard = () => {
                 <div className="input-group">
                   <label className="input-label">Current Password</label>
                   <div style={{ position: 'relative' }}>
-                    <input type={showCurPass ? "text" : "password"} className="input-field" style={{ paddingRight: '2.5rem' }} value={cpCur} onChange={e=>setCpCur(e.target.value.substring(0, 8))} placeholder="Current Password" maxLength={8} required/>
+                    <input type={showCurPass ? "text" : "password"} className="input-field" style={{ paddingRight: '2.5rem' }} value={cpCur} onChange={e=>setCpCur(e.target.value.substring(0, 12))} placeholder="Current Password" maxLength={12} required/>
                     <button 
                       type="button" 
                       onClick={() => setShowCurPass(!showCurPass)} 
@@ -1470,7 +1470,7 @@ const StudentDashboard = () => {
                 <div className="input-group">
                   <label className="input-label">New Password</label>
                   <div style={{ position: 'relative' }}>
-                    <input type={showNewPass ? "text" : "password"} className="input-field" style={{ paddingRight: '2.5rem' }} value={cpNew} onChange={e=>setCpNew(e.target.value.substring(0, 8))} placeholder="New Password" maxLength={8} required/>
+                    <input type={showNewPass ? "text" : "password"} className="input-field" style={{ paddingRight: '2.5rem' }} value={cpNew} onChange={e=>setCpNew(e.target.value.substring(0, 12))} placeholder="New Password" maxLength={12} required/>
                     <button 
                       type="button" 
                       onClick={() => setShowNewPass(!showNewPass)} 
@@ -1483,7 +1483,7 @@ const StudentDashboard = () => {
                 <div className="input-group">
                   <label className="input-label">Confirm New Password</label>
                   <div style={{ position: 'relative' }}>
-                    <input type={showConPass ? "text" : "password"} className="input-field" style={{ paddingRight: '2.5rem' }} value={cpCon} onChange={e=>setCpCon(e.target.value.substring(0, 8))} placeholder="Confirm New Password" maxLength={8} required/>
+                    <input type={showConPass ? "text" : "password"} className="input-field" style={{ paddingRight: '2.5rem' }} value={cpCon} onChange={e=>setCpCon(e.target.value.substring(0, 12))} placeholder="Confirm New Password" maxLength={12} required/>
                     <button 
                       type="button" 
                       onClick={() => setShowConPass(!showConPass)} 

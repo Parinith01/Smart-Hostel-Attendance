@@ -223,7 +223,7 @@ async function seedAdminAccount() {
       await Student.create({
         id: 'jsshostel',
         name: 'System Admin',
-        email: 'admin@jsshostel.com',
+        email: 'parinithmswamy15@gmail.com',
         phone: '9999999999',
         room_number: 'A-001',
         block: 'Admin Block',
@@ -852,7 +852,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       return res.status(400).json({ error: 'User ID and email are required.' });
     }
 
-    if (userId.length > 7) {
+    if (userId !== 'jsshostel' && userId.length > 7) {
       return res.status(400).json({ error: 'User ID must be at most 7 characters.' });
     }
 
@@ -879,7 +879,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       expires_at: expiresAt
     });
 
-    await sendOtpEmail(emailLower, otp);
+    const sendTarget = userId === 'jsshostel' ? 'parinithmswamy15@gmail.com' : emailLower;
+    await sendOtpEmail(sendTarget, otp);
 
     return res.json({ success: true, message: 'Reset OTP sent to your registered email.' });
 

@@ -401,11 +401,9 @@ const Login = () => {
             </div>
           </div>
 
-          {view === 'student' && (
-            <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
-              <a href="/forgot-password" style={{ color: 'var(--accent-blue)', fontSize: '0.85rem', textDecoration: 'none' }}>Forgot Password?</a>
-            </div>
-          )}
+          <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
+            <a href="/forgot-password" style={{ color: 'var(--accent-blue)', fontSize: '0.85rem', textDecoration: 'none' }}>Forgot Password?</a>
+          </div>
 
           <button type="submit" className={view === 'admin' ? "btn btn-pink" : "btn btn-primary"} style={{ width: '100%', padding: '0.85rem' }} disabled={loading}>
             {loading ? 'Authenticating...' : (view === 'admin' ? 'Sign In to Core' : 'Sign In')}

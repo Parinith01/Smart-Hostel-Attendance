@@ -39,6 +39,22 @@ const PORT = process.env.PORT || 5000;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hostel_hub_super_secret_jwt_key_2026';
 
+// ── Timezone Helpers (IST: UTC+5:30) ──────────────────────────────────
+function getISTDate() {
+  const d = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  return new Date(d.getTime() + istOffset);
+}
+
+function getISTDateString() {
+  return getISTDate().toISOString().split('T')[0];
+}
+
+function getISTHHMM() {
+  const ist = getISTDate();
+  return `${String(ist.getUTCHours()).padStart(2, '0')}:${String(ist.getUTCMinutes()).padStart(2, '0')}`;
+}
+
 app.set('trust proxy', 1);
 
 // Global explicit CORS & Preflight middleware
@@ -110,6 +126,10 @@ const otpLimiter = rateLimit({
 app.use('/api/', globalLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/request-otp', authLimiter);
+app.use('/api/auth/verify-otp', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth/verify-otp', otpLimiter);
 app.use('/api/auth/resend-otp', otpLimiter);
 app.use('/api/auth/forgot-password', otpLimiter);
@@ -162,7 +182,7 @@ function scheduleAutoExpiry() {
 
 async function runAutoExpiry() {
   try {
-    const currentYear = new Date().getFullYear();
+    const currentYear = getISTDate().getUTCFullYear();
 
     // Find all Active students whose leaving_year has passed
     const expired = await Student.findAll({
@@ -964,7 +984,7 @@ app.get('/api/student/dashboard', authenticateToken, async (req, res) => {
     const student = await Student.findByPk(req.user.id);
     if (!student) return res.status(404).json({ error: 'Student not found.' });
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getISTDateString();
 
     // Find today's breakfast and dinner votes
     const votes = await AttendanceVote.findAll({
@@ -978,8 +998,8 @@ app.get('/api/student/dashboard', authenticateToken, async (req, res) => {
     const dinnerVote = votes.find(v => v.meal_type === 'dinner')?.status || 'None';
 
     // Calculate remaining absences in the CURRENT month
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    const startOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth(), 1);
+    const endOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth() + 1, 0, 23, 59, 59);
 
     const absenceCount = await Absence.count({
       where: {
@@ -1026,7 +1046,7 @@ app.post('/api/student/vote', authenticateToken, async (req, res) => {
   try {
     const { meal_type, status } = req.body;
     const studentId = req.user.id;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getISTDateString();
 
     if (!meal_type || !status) {
       return res.status(400).json({ error: 'Meal type and status are required.' });
@@ -1037,8 +1057,7 @@ app.post('/api/student/vote', authenticateToken, async (req, res) => {
     const cfg = {};
     configRows.forEach(r => { cfg[r.key] = r.value; });
 
-    const now = new Date();
-    const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const currentHHMM = getISTHHMM();
 
     const start = cfg[`${meal_type}_start`] || '00:00';
     const end = cfg[`${meal_type}_end`] || '23:59';
@@ -1051,8 +1070,8 @@ app.post('/api/student/vote', authenticateToken, async (req, res) => {
 
     if (status === 'Absent') {
       // 8 absence limit check
-      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-      const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+      const startOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth(), 1);
+      const endOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth() + 1, 0, 23, 59, 59);
 
       const absenceCount = await Absence.count({
         where: {
@@ -1097,11 +1116,11 @@ app.post('/api/student/absence', authenticateToken, async (req, res) => {
   try {
     const { return_date, return_meal, meal_type } = req.body;
     const studentId = req.user.id;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getISTDateString();
 
     // Check limit
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    const startOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth(), 1);
+    const endOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth() + 1, 0, 23, 59, 59);
 
     const absenceCount = await Absence.count({
       where: {
@@ -1509,7 +1528,7 @@ app.put('/api/student/change-password', authenticateToken, async (req, res) => {
 // Get student's active token (for today or tomorrow breakfast)
 app.get('/api/student/my-token', authenticateToken, async (req, res) => {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getISTDateString();
     const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     
     const token = await MealToken.findOne({
@@ -1551,8 +1570,8 @@ app.get('/api/student/my-token', authenticateToken, async (req, res) => {
 app.get('/api/student/rebates', authenticateToken, async (req, res) => {
   try {
     const studentId = req.user.id;
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    const startOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth(), 1);
+    const endOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth() + 1, 0, 23, 59, 59);
 
     const rateRow = await SystemConfig.findByPk('rebate_rate_per_meal');
     const rebateRate = rateRow ? parseFloat(rateRow.value) : 50.0;
@@ -2110,7 +2129,7 @@ app.post('/api/admin/revoke-absence', requireAdmin, async (req, res) => {
 app.get('/api/admin/attendance-roster', requireAdmin, async (req, res) => {
   try {
     const { date } = req.query;
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    const targetDate = date || getISTDateString();
 
     const students = await Student.findAll({
       where: { role: 'student', status: 'Active' },
@@ -2463,8 +2482,8 @@ app.get('/api/admin/report/weekly-stats', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/rebates/summary', requireAdmin, async (req, res) => {
   try {
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    const startOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth(), 1);
+    const endOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth() + 1, 0, 23, 59, 59);
 
     const rateRow = await SystemConfig.findByPk('rebate_rate_per_meal');
     const rebateRate = rateRow ? parseFloat(rateRow.value) : 50.0;

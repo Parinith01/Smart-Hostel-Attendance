@@ -959,6 +959,7 @@ const ForgotPassword = () => {
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="000000"
                 maxLength="6"
+                autoComplete="one-time-code"
                 required
               />
             </div>
@@ -974,6 +975,7 @@ const ForgotPassword = () => {
                   onChange={(e) => setNewPassword(e.target.value.substring(0, 8))}
                   placeholder="New Password"
                   maxLength={8}
+                  autoComplete="new-password"
                   required
                 />
                 <button 
@@ -997,6 +999,7 @@ const ForgotPassword = () => {
                   onChange={(e) => setConfirmPassword(e.target.value.substring(0, 8))}
                   placeholder="Confirm New Password"
                   maxLength={8}
+                  autoComplete="new-password"
                   required
                 />
                 <button 

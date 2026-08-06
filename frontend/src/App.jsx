@@ -1105,7 +1105,7 @@ const StudentDashboard = () => {
       } catch (e) {
         // Suppress interval logs to keep developer console clean
       }
-    }, 3000);
+    }, 20000);
 
     return () => clearInterval(interval);
   }, [myToken]);
@@ -1671,23 +1671,32 @@ const AdminDashboard = () => {
   };
   const loadAll = async () => {
     try {
-      const [dm,dl,ds,dstu,de,dcfg,dtok,dimp] = await Promise.all([
+      const [dm,dl,ds,de,dcfg,dtok,dimp] = await Promise.all([
         apiGet(`${API_BASE}/admin/dashboard`),
         apiGet(`${API_BASE}/admin/leave-requests`),
         apiGet(`${API_BASE}/admin/suspicious`),
-        apiGet(`${API_BASE}/admin/students?status=${statusFilter}&search=${search}`),
         apiGet(`${API_BASE}/admin/allowed-emails`),
         apiGet(`${API_BASE}/admin/system-config`),
         apiGet(`${API_BASE}/admin/tokens?source_date=${rosterDate}&source_meal=dinner`),
         apiGet(`${API_BASE}/admin/allowed-emails/imports`)
       ]);
       setMetrics(dm.metrics); setLeaves(dl.requests); setSuspicious(ds.suspiciousAccounts);
-      setStudents(dstu.students); setAllowedEmails(de.emails);
+      setAllowedEmails(de.emails);
       if(dcfg.config) setTimeCfg(c=>({...c,...dcfg.config}));
       setTokens(dtok.tokens||[]);
       setImportedFiles(dimp.imports || []);
     } catch(e){showMsg('error',e.message);}
   };
+
+  // Debounced search for students
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      apiGet(`${API_BASE}/admin/students?status=${statusFilter}&search=${search}`)
+        .then(res => setStudents(res.students))
+        .catch(err => console.error(err));
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search, statusFilter]);
 
   useEffect(()=>{ loadAll(); loadRoster(rosterDate); },[]);
   useEffect(()=>{ loadRoster(rosterDate); },[rosterDate]);
@@ -2777,8 +2786,8 @@ const AdminDashboard = () => {
           <div className="panel-card" style={{marginBottom:'1.5rem', border: '1px solid rgba(0, 229, 255, 0.25)'}}>
             <div className="panel-title" style={{color:'var(--cyan)'}}>ACTIVE RESIDENTS DIRECTORY</div>
             <div style={{display:'flex',gap:'.75rem',marginBottom:'1rem',flexWrap:'wrap'}}>
-              <input className="input-field" style={{flex:1,minWidth:'180px'}} placeholder="Search active name..." value={search} onChange={e=>{setSearch(e.target.value);loadAll();}}/>
-              <select className="input-field" style={{width:'160px'}} value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);loadAll();}}>
+              <input className="input-field" style={{flex:1,minWidth:'180px'}} placeholder="Search active name..." value={search} onChange={e=>{setSearch(e.target.value);}}/>
+              <select className="input-field" style={{width:'160px'}} value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);}}>
                 <option value="">All Statuses</option>
                 {['Active','Inactive','Suspended','Left Hostel','Suspicious','Completed'].map(s=><option key={s} value={s}>{s}</option>)}
               </select>

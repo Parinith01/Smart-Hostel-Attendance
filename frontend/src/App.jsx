@@ -260,7 +260,7 @@ const Login = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', letterSpacing: '0.08em', fontWeight: 600, textTransform: 'uppercase', margin: 0 }}>smart attendence system login dashobard</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', width: '100%', maxWidth: '720px' }} className="portal-select-grid">
+        <div className="portal-select-grid">
           {/* Student Gate Card */}
           <div 
             onClick={() => setView('student')}

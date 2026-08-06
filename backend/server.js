@@ -650,7 +650,7 @@ app.post('/api/auth/webauthn/register-options', async (req, res) => {
       userName: student.email || student.id || 'unknown',
       attestationType: 'none',
       excludeCredentials: userCredentials.map(cred => ({
-        id: new Uint8Array(Buffer.from(cred.id || '', 'base64url')),
+        id: cred.id,
         type: 'public-key'
       })),
       authenticatorSelection: {
@@ -731,7 +731,7 @@ app.post('/api/auth/webauthn/login-options', async (req, res) => {
     const options = await generateAuthenticationOptions({
       rpID,
       allowCredentials: userCredentials.map(cred => ({
-        id: new Uint8Array(Buffer.from(cred.id || '', 'base64url')),
+        id: cred.id,
         type: 'public-key'
       })),
       userVerification: 'preferred'
@@ -769,11 +769,11 @@ app.post('/api/auth/webauthn/login-verify', async (req, res) => {
     const verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge: student.webauthn_current_challenge,
-      expectedOrigin: [origin],
-      expectedRPID: [rpID],
-      authenticator: {
-        credentialID: new Uint8Array(Buffer.from(credential.id || '', 'base64url')),
-        credentialPublicKey: new Uint8Array(Buffer.from(credential.public_key || '', 'base64url')),
+      expectedOrigin: [origin, 'https://smart-hostel-attendance.vercel.app'],
+      expectedRPID: [rpID, 'smart-hostel-attendance.vercel.app'],
+      credential: {
+        id: credential.id,
+        publicKey: new Uint8Array(Buffer.from(credential.public_key || '', 'base64url')),
         counter: Number(credential.counter || 0)
       }
     });

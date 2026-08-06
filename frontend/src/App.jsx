@@ -10,7 +10,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 
 // API Configuration
-const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : 'https://jss-hostel-backend.vercel.app/api');
+const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname.match(/^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./)) ? `http://${window.location.hostname}:5000/api` : 'https://jss-hostel-backend.vercel.app/api');
 
 // Simple Alert Component
 const Alert = ({ type = 'info', children }) => {

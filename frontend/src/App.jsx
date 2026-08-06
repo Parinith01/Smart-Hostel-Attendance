@@ -260,7 +260,7 @@ const Login = () => {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', letterSpacing: '0.08em', fontWeight: 600, textTransform: 'uppercase', margin: 0 }}>smart attendence system login dashobard</p>
         </div>
 
-        <div className="portal-select-grid">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', width: '100%', maxWidth: '720px', justifyContent: 'center' }}>
           {/* Student Gate Card */}
           <div 
             onClick={() => setView('student')}
@@ -276,7 +276,8 @@ const Login = () => {
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-              borderRadius: '12px'
+              borderRadius: '12px',
+              flex: '1 1 280px'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.border = '1px solid var(--cyan)';
@@ -310,7 +311,8 @@ const Login = () => {
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-              borderRadius: '12px'
+              borderRadius: '12px',
+              flex: '1 1 280px'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.border = '1px solid var(--pink)';

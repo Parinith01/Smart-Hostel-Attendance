@@ -2572,35 +2572,7 @@ const AdminDashboard = () => {
             </form>
 
             <div style={{ marginBottom: '1.25rem' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                style={{ 
-                  width: '100%', 
-                  borderColor: 'var(--orange)', 
-                  color: 'var(--orange)', 
-                  fontSize: '0.82rem', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  gap: '6px',
-                  cursor: verifyLoading ? 'not-allowed' : 'pointer'
-                }}
-                onClick={bulkVerifyEmails}
-                disabled={verifyLoading}
-              >
-                {verifyLoading ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" />
-                    VERIFYING WHITELIST EMAILS IN BULK...
-                  </>
-                ) : (
-                  <>
-                    <Shield size={14} />
-                    BULK VERIFY & CLEAN WHITELIST (AUTO-REMOVE FAKE EMAILS)
-                  </>
-                )}
-              </button>
+
             </div>
 
             {/* Bulk Whitelist Upload Dropzone */}
@@ -2751,15 +2723,7 @@ const AdminDashboard = () => {
                       >
                         <div>
                           <span className="email-entry-text">{e.email}</span>
-                          {e.is_verified ? (
-                            <span style={{ fontSize: '0.72rem', color: 'var(--green)', marginLeft: '0.5rem', fontWeight: 800, background: 'rgba(63, 185, 80, 0.1)', border: '1px solid rgba(63, 185, 80, 0.3)', padding: '1px 5px', borderRadius: '4px' }}>✓ VERIFIED</span>
-                          ) : (e.id || e.email) === currentlyVerifyingId ? (
-                            <span style={{ fontSize: '0.72rem', color: 'var(--cyan)', marginLeft: '0.5rem', fontWeight: 800, background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', padding: '1px 5px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <RefreshCw size={10} className="animate-spin" /> VERIFYING...
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '0.72rem', color: 'var(--orange)', marginLeft: '0.5rem', fontWeight: 800, background: 'rgba(240, 136, 62, 0.1)', border: '1px solid rgba(240, 136, 62, 0.3)', padding: '1px 5px', borderRadius: '4px' }}>◷ PENDING</span>
-                          )}
+
                           {e.notes && <span style={{fontSize:'.72rem',color:'var(--text-3)',marginLeft:'.5rem'}}>— {e.notes}</span>}
                         </div>
                         <button className="verify-btn" style={{background:'var(--red-dim)',color:'var(--red)',border:'1px solid rgba(255,23,68,.3)'}} onClick={()=>removeEmail(e.id || e.email)}>Remove</button>

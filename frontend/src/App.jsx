@@ -1753,6 +1753,26 @@ const AdminDashboard = () => {
     catch(e){showMsg('error',e.message);}
   };
 
+  const forceAbsent = async (student_id, meal_type) => {
+    if (!window.confirm(`Force mark ${meal_type} absent for this student?`)) return;
+    try {
+      await apiPost(`${API_BASE}/admin/overwrite-vote`, { student_id, date: rosterDate, meal_type, status: 'Absent' });
+      loadRoster(rosterDate);
+      showMsg('success', 'Student marked as absent.');
+    } catch(e) { showMsg('error', e.message); }
+  };
+
+  const deleteToken = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this token?")) return;
+    try {
+      await apiPost(`${API_BASE}/admin/tokens/delete`, { id });
+      loadTokens();
+      showMsg('success', 'Token deleted successfully.');
+    } catch (e) {
+      showMsg('error', e.message);
+    }
+  };
+
   const generateTokens = async (meal) => {
     try { const r=await apiPost(`${API_BASE}/admin/generate-tokens`,{source_date:rosterDate,source_meal:meal}); showMsg('success',r.message); loadAll(); loadRoster(rosterDate); }
     catch(e){showMsg('error',e.message);}
@@ -2196,9 +2216,20 @@ const AdminDashboard = () => {
                       {tokens.map(t => (
                         <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
                           <span style={{ fontSize: '0.78rem', color: 'var(--text-2)', fontWeight: 600 }}>{t.Student?.name || t.student_id}</span>
-                          <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--cyan)', fontWeight: 800 }}>
-                            JSS Token #{t.token_number}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--cyan)', fontWeight: 800 }}>
+                              JSS Token #{t.token_number}
+                            </span>
+                            <button 
+                              onClick={() => deleteToken(t.id)} 
+                              style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.8 }}
+                              title="Remove Token"
+                              onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                              onMouseLeave={e => e.currentTarget.style.opacity = 0.8}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2489,19 +2520,39 @@ const AdminDashboard = () => {
                               </button>
                             )}
                           </div>
-                          <button 
-                            className={`verify-btn ${s.breakfast_verified?'verified':'unverified'}`} 
-                            onClick={()=>verify(s.id,'breakfast',s.breakfast_verified)} 
-                            style={{ 
-                              width: 'fit-content', 
-                              fontSize: '0.65rem', 
-                              opacity: s.breakfast_vote !== 'Present' ? 0.3 : 1, 
-                              cursor: s.breakfast_vote !== 'Present' ? 'not-allowed' : 'pointer' 
-                            }}
-                            disabled={s.breakfast_vote !== 'Present'}
-                          >
-                            {s.breakfast_verified?'✓ VERIFIED':'VERIFY'}
-                          </button>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              className={`verify-btn ${s.breakfast_verified?'verified':'unverified'}`} 
+                              onClick={()=>verify(s.id,'breakfast',s.breakfast_verified)} 
+                              style={{ 
+                                width: 'fit-content', 
+                                fontSize: '0.65rem', 
+                                opacity: s.breakfast_vote !== 'Present' ? 0.3 : 1, 
+                                cursor: s.breakfast_vote !== 'Present' ? 'not-allowed' : 'pointer' 
+                              }}
+                              disabled={s.breakfast_vote !== 'Present'}
+                            >
+                              {s.breakfast_verified?'✓ VERIFIED':'VERIFY'}
+                            </button>
+                            {s.breakfast_vote === 'Present' && (
+                              <button
+                                onClick={() => forceAbsent(s.id, 'breakfast')}
+                                style={{
+                                  background: 'rgba(255, 23, 68, 0.1)',
+                                  border: '1px solid rgba(255, 23, 68, 0.3)',
+                                  color: 'var(--red)',
+                                  fontSize: '0.65rem',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontWeight: 800
+                                }}
+                                title="Force mark student as absent"
+                              >
+                                MARK ABSENT
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td>
@@ -2530,19 +2581,39 @@ const AdminDashboard = () => {
                               </button>
                             )}
                           </div>
-                          <button 
-                            className={`verify-btn ${s.dinner_verified?'verified':'unverified'}`} 
-                            onClick={()=>verify(s.id,'dinner',s.dinner_verified)} 
-                            style={{ 
-                              width: 'fit-content', 
-                              fontSize: '0.65rem', 
-                              opacity: s.dinner_vote !== 'Present' ? 0.3 : 1, 
-                              cursor: s.dinner_vote !== 'Present' ? 'not-allowed' : 'pointer' 
-                            }}
-                            disabled={s.dinner_vote !== 'Present'}
-                          >
-                            {s.dinner_verified?'✓ VERIFIED':'VERIFY'}
-                          </button>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              className={`verify-btn ${s.dinner_verified?'verified':'unverified'}`} 
+                              onClick={()=>verify(s.id,'dinner',s.dinner_verified)} 
+                              style={{ 
+                                width: 'fit-content', 
+                                fontSize: '0.65rem', 
+                                opacity: s.dinner_vote !== 'Present' ? 0.3 : 1, 
+                                cursor: s.dinner_vote !== 'Present' ? 'not-allowed' : 'pointer' 
+                              }}
+                              disabled={s.dinner_vote !== 'Present'}
+                            >
+                              {s.dinner_verified?'✓ VERIFIED':'VERIFY'}
+                            </button>
+                            {s.dinner_vote === 'Present' && (
+                              <button
+                                onClick={() => forceAbsent(s.id, 'dinner')}
+                                style={{
+                                  background: 'rgba(255, 23, 68, 0.1)',
+                                  border: '1px solid rgba(255, 23, 68, 0.3)',
+                                  color: 'var(--red)',
+                                  fontSize: '0.65rem',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontWeight: 800
+                                }}
+                                title="Force mark student as absent"
+                              >
+                                MARK ABSENT
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td>

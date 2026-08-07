@@ -2216,6 +2216,34 @@ app.post('/api/admin/verify-attendance', requireAdmin, async (req, res) => {
   }
 });
 
+// Admin overwrite vote
+app.post('/api/admin/overwrite-vote', requireAdmin, async (req, res) => {
+  try {
+    const { student_id, date, meal_type, status } = req.body;
+    if (!student_id || !date || !meal_type || !status)
+      return res.status(400).json({ error: 'Missing parameters' });
+      
+    const [vote, created] = await AttendanceVote.findOrCreate({
+      where: { student_id, date, meal_type },
+      defaults: { status }
+    });
+
+    if (!created) {
+      vote.status = status;
+      await vote.save();
+    }
+    
+    if (status === 'Absent') {
+       await AttendanceVerification.destroy({ where: { student_id, date, meal_type } });
+    }
+    
+    return res.json({ success: true, status });
+  } catch(err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ==========================================
 // 8. ADMIN – TOKEN GENERATION
 // ==========================================
@@ -2280,6 +2308,20 @@ app.get('/api/admin/tokens', requireAdmin, async (req, res) => {
       order: [['token_number', 'ASC']]
     });
     return res.json({ tokens });
+  } catch (err) {
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+// Delete token
+app.post('/api/admin/tokens/delete', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'Token ID required.' });
+    const token = await MealToken.findByPk(id);
+    if (!token) return res.status(404).json({ error: 'Token not found.' });
+    await token.destroy();
+    return res.json({ success: true, message: 'Token deleted successfully.' });
   } catch (err) {
     return res.status(500).json({ error: 'Server error.' });
   }

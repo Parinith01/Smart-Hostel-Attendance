@@ -4,7 +4,7 @@ import {
   User, Lock, Phone, Mail, Home, Shield, LogOut, CheckCircle, XCircle, 
   AlertTriangle, RefreshCw, Search, Filter, Calendar, Users, 
   CalendarDays, Award, Clock, FileSpreadsheet, FileText, ShieldAlert, Key, Utensils,
-  Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff, Fingerprint
+  Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff, Fingerprint, Trash2
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
@@ -1766,7 +1766,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this token?")) return;
     try {
       await apiPost(`${API_BASE}/admin/tokens/delete`, { id });
-      loadTokens();
+      loadAll();
       showMsg('success', 'Token deleted successfully.');
     } catch (e) {
       showMsg('error', e.message);

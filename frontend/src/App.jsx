@@ -1713,6 +1713,8 @@ const AdminDashboard = () => {
   }
 
   async function handleQrScan(scannedString) {
+    setScanResultModal({ show: true, loading: true });
+    
     let tokenData;
     try {
       tokenData = JSON.parse(scannedString.trim());
@@ -1720,6 +1722,7 @@ const AdminDashboard = () => {
       playBeep('error');
       setScanResultModal({
         show: true,
+        loading: false,
         granted: false,
         reason: 'Invalid pass code structure. Could not parse QR payload.'
       });
@@ -1730,6 +1733,7 @@ const AdminDashboard = () => {
       playBeep('error');
       setScanResultModal({
         show: true,
+        loading: false,
         granted: false,
         reason: 'No valid token pass data found in QR payload.'
       });
@@ -1748,6 +1752,7 @@ const AdminDashboard = () => {
         playBeep('success');
         setScanResultModal({
           show: true,
+          loading: false,
           granted: true,
           studentName: res.studentName,
           roomNumber: res.roomNumber,
@@ -1760,6 +1765,7 @@ const AdminDashboard = () => {
         playBeep('error');
         setScanResultModal({
           show: true,
+          loading: false,
           granted: false,
           reason: res.reason || 'Verification failed.',
           studentName: res.studentName,
@@ -1770,6 +1776,7 @@ const AdminDashboard = () => {
       playBeep('error');
       setScanResultModal({
         show: true,
+        loading: false,
         granted: false,
         reason: e.message || 'Pass check failed. Database connection error.'
       });
@@ -2286,22 +2293,47 @@ const AdminDashboard = () => {
             {/* SCAN RESULT MODAL OVERLAY (ACCESS GRANTED / ACCESS DENIED) */}
             {scanResultModal.show && (
               <div style={{
-                position: 'absolute',
+                position: 'fixed',
                 top: 0, left: 0, right: 0, bottom: 0,
-                background: 'rgba(10, 10, 24, 0.96)',
-                backdropFilter: 'blur(8px)',
-                borderRadius: '12px',
+                background: 'rgba(10, 10, 24, 0.98)',
+                backdropFilter: 'blur(12px)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 10,
+                zIndex: 99999,
                 animation: 'fadeIn 0.25s ease',
                 padding: '1.5rem',
-                textAlign: 'center',
-                border: scanResultModal.granted ? '2px solid var(--green)' : '2px solid var(--red)'
+                textAlign: 'center'
               }}>
-                {scanResultModal.granted ? (
+                {scanResultModal.loading ? (
+                  <>
+                    <style>{`
+                      @keyframes pulseLogo {
+                        0% { opacity: 0.5; transform: scale(0.95); }
+                        50% { opacity: 1; transform: scale(1.05); }
+                        100% { opacity: 0.5; transform: scale(0.95); }
+                      }
+                    `}</style>
+                    <div style={{
+                      width: '80px', height: '80px',
+                      borderRadius: '50%',
+                      background: 'rgba(0, 229, 255, 0.1)',
+                      border: '3px solid var(--cyan)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--cyan)',
+                      marginBottom: '1.5rem',
+                      animation: 'pulseLogo 1.5s infinite ease-in-out',
+                      boxShadow: '0 0 25px rgba(0, 229, 255, 0.4)'
+                    }}>
+                      <Shield size={36} />
+                    </div>
+                    <h2 style={{ color: 'var(--cyan)', fontWeight: 900, fontSize: '1.6rem', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                      VERIFYING PASS
+                    </h2>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-2)', fontWeight: 600 }}>Please wait, securely checking database...</p>
+                  </>
+                ) : scanResultModal.granted ? (
                   <>
                     <div style={{
                       width: '64px', height: '64px',

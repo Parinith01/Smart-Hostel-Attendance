@@ -217,11 +217,11 @@ async function seedAdminAccount() {
     // Remove old default admin if it still exists
     await Student.destroy({ where: { id: 'adm9999' } }).catch(() => {});
     
-    const adminExists = await Student.findOne({ where: { id: 'jsshostel' } });
+    const adminExists = await Student.findOne({ where: { id: 'jss#2026' } });
     if (!adminExists) {
       const hashedPassword = await bcrypt.hash('jss1#@1947', 10);
       await Student.create({
-        id: 'jsshostel',
+        id: 'jss#2026',
         name: 'System Admin',
         email: 'parinithmswamy15@gmail.com',
         phone: '9999999999',
@@ -234,7 +234,7 @@ async function seedAdminAccount() {
         registration_ip: '127.0.0.1',
         device_fingerprint: 'sys-admin-fingerprint'
       });
-      console.log('Admin account seeded: ID "jsshostel"');
+      console.log('Admin account seeded: ID "jss#2026"');
     }
   } catch (err) {
     console.error('Failed to seed admin account:', err);
@@ -345,8 +345,8 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Phone number must be exactly 10 digits.' });
     }
 
-    if (password.length > 8) {
-      return res.status(400).json({ error: 'Password must be at most 8 characters.' });
+    if (password.length > 12) {
+      return res.status(400).json({ error: 'Password must be at most 12 characters.' });
     }
 
     // 0. Email Whitelist Check
@@ -407,7 +407,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Auto-generate User ID: first 3 letters of name + last 4 letters of phone
     const cleanName = name.replace(/[^a-zA-Z]/g, '').toLowerCase();
-    const namePart = cleanName.substring(0, 3).padEnd(3, 'x');
+    const namePart = cleanName.substring(0, 4).padEnd(4, 'x');
     const phonePart = phone.replace(/[^0-9]/g, '').slice(-4);
     const userId = `${namePart}${phonePart}`;
 
@@ -571,12 +571,12 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'User ID and password are required.' });
     }
 
-    if (userId !== 'jsshostel' && userId.length > 7) {
-      return res.status(400).json({ error: 'User ID must be at most 7 characters.' });
+    if (userId.length > 8) {
+      return res.status(400).json({ error: 'User ID must be at most 8 characters.' });
     }
 
-    if (password.length > 8) {
-      return res.status(400).json({ error: 'Password must be at most 8 characters.' });
+    if (password.length > 12) {
+      return res.status(400).json({ error: 'Password must be at most 12 characters.' });
     }
 
     // Fetch user
@@ -852,8 +852,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       return res.status(400).json({ error: 'User ID and email are required.' });
     }
 
-    if (userId !== 'jsshostel' && userId.length > 7) {
-      return res.status(400).json({ error: 'User ID must be at most 7 characters.' });
+    if (userId.length > 8) {
+      return res.status(400).json({ error: 'User ID must be at most 8 characters.' });
     }
 
     const emailLower = email.toLowerCase().trim();
@@ -879,7 +879,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       expires_at: expiresAt
     });
 
-    const sendTarget = userId === 'jsshostel' ? 'parinithmswamy15@gmail.com' : emailLower;
+    const sendTarget = userId === 'jss#2026' ? 'parinithmswamy15@gmail.com' : emailLower;
     await sendOtpEmail(sendTarget, otp);
 
     return res.json({ success: true, message: 'Reset OTP sent to your registered email.' });
@@ -899,12 +899,12 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
-    if (userId !== 'jsshostel' && userId.length > 7) {
-      return res.status(400).json({ error: 'User ID must be at most 7 characters.' });
+    if (userId.length > 8) {
+      return res.status(400).json({ error: 'User ID must be at most 8 characters.' });
     }
 
-    if (newPassword.length > 8) {
-      return res.status(400).json({ error: 'Password must be at most 8 characters.' });
+    if (newPassword.length > 12) {
+      return res.status(400).json({ error: 'Password must be at most 12 characters.' });
     }
 
     if (newPassword !== confirmPassword) {
@@ -1510,8 +1510,8 @@ app.put('/api/student/change-password', authenticateToken, async (req, res) => {
     if (newPassword !== confirmPassword)
       return res.status(400).json({ error: 'New passwords do not match.' });
 
-    if (newPassword.length > 8) {
-      return res.status(400).json({ error: 'New password must be at most 8 characters.' });
+    if (newPassword.length > 12) {
+      return res.status(400).json({ error: 'New Password must be at most 12 characters.' });
     }
 
     const student = await Student.findByPk(req.user.id);

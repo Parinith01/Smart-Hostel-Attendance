@@ -1713,6 +1713,9 @@ const AdminDashboard = () => {
               qrbox: { width: 250, height: 250 }
             },
             async (decodedText) => {
+              if (qrScanner && qrScanner.getState && qrScanner.getState() === 2) {
+                try { await qrScanner.stop(); } catch(e){ console.error(e); }
+              }
               setCameraActive(false);
               await handleQrScan(decodedText);
             },
@@ -1728,13 +1731,13 @@ const AdminDashboard = () => {
       const timer = setTimeout(startCamera, 300);
       return () => {
         clearTimeout(timer);
-        if (qrScanner && qrScanner.isScanning) {
+        if (qrScanner && qrScanner.getState && qrScanner.getState() === 2) {
           qrScanner.stop().catch(console.error);
         }
       };
     } else {
       if (html5QrScanner) {
-        if (html5QrScanner.isScanning) {
+        if (html5QrScanner.getState && html5QrScanner.getState() === 2) {
           html5QrScanner.stop().catch(console.error);
         }
         setHtml5QrScanner(null);
@@ -2228,78 +2231,75 @@ const AdminDashboard = () => {
                 </p>
               </div>
               
-              {cameraActive ? (
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
-                  <div 
-                    id="qr-reader" 
-                    style={{ 
-                      width: '100%', 
-                      maxWidth: '340px', 
-                      aspectRatio: '1', 
-                      borderRadius: '12px', 
-                      overflow: 'hidden', 
-                      border: '2px solid var(--cyan)',
-                      boxShadow: '0 0 25px rgba(0, 229, 255, 0.3)',
-                      position: 'relative'
-                    }}
-                  >
-                    {/* Scanning laser line micro-animation */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 0, left: 0, right: 0,
-                      height: '2.5px',
-                      background: 'var(--cyan)',
-                      boxShadow: '0 0 12px var(--cyan)',
-                      animation: 'scanLine 2.5s linear infinite',
-                      zIndex: 1
-                    }} />
-                  </div>
-                  
-                  <button 
-                    className="btn btn-secondary" 
-                    style={{ padding: '0.75rem 2rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px', borderColor: 'var(--red)', color: 'var(--red)' }}
-                    onClick={() => setCameraActive(false)}
-                  >
-                    <CameraOff size={16} /> Deactivate Scanner Camera
-                  </button>
-                </div>
-              ) : (
+              <div style={{ display: cameraActive ? 'flex' : 'none', width: '100%', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
                 <div 
+                  id="qr-reader" 
                   style={{ 
                     width: '100%', 
                     maxWidth: '340px', 
-                    aspectRatio: '1.3', 
-                    background: 'rgba(255,255,255,0.01)', 
-                    border: '1.5px dashed rgba(0, 229, 255, 0.35)', 
-                    borderRadius: '16px', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    gap: '1rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: 'inset 0 0 15px rgba(0, 229, 255, 0.02)'
-                  }}
-                  onClick={() => setCameraActive(true)}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'var(--cyan)';
-                    e.currentTarget.style.boxShadow = 'inset 0 0 25px rgba(0, 229, 255, 0.05), 0 0 15px rgba(0, 229, 255, 0.1)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.35)';
-                    e.currentTarget.style.boxShadow = 'inset 0 0 15px rgba(0, 229, 255, 0.02)';
+                    aspectRatio: '1', 
+                    borderRadius: '12px', 
+                    overflow: 'hidden', 
+                    border: '2px solid var(--cyan)',
+                    boxShadow: '0 0 25px rgba(0, 229, 255, 0.3)',
+                    position: 'relative'
                   }}
                 >
-                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(0, 229, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)' }}>
-                    <Camera size={26} />
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.88rem', color: 'var(--cyan)', fontWeight: 800, display: 'block', marginBottom: '2px' }}>Start Camera Scanner</span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Scan resident QR code passes</span>
-                  </div>
+                  <div style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0,
+                    height: '2.5px',
+                    background: 'var(--cyan)',
+                    boxShadow: '0 0 12px var(--cyan)',
+                    animation: 'scanLine 2.5s linear infinite',
+                    zIndex: 1
+                  }} />
                 </div>
-              )}
+                
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ padding: '0.75rem 2rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px', borderColor: 'var(--red)', color: 'var(--red)' }}
+                  onClick={() => setCameraActive(false)}
+                >
+                  <CameraOff size={16} /> Deactivate Scanner Camera
+                </button>
+              </div>
+
+              <div 
+                style={{ 
+                  display: !cameraActive ? 'flex' : 'none',
+                  width: '100%', 
+                  maxWidth: '340px', 
+                  aspectRatio: '1.3', 
+                  background: 'rgba(255,255,255,0.01)', 
+                  border: '1.5px dashed rgba(0, 229, 255, 0.35)', 
+                  borderRadius: '16px', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '1rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: 'inset 0 0 15px rgba(0, 229, 255, 0.02)'
+                }}
+                onClick={() => setCameraActive(true)}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'var(--cyan)';
+                  e.currentTarget.style.boxShadow = 'inset 0 0 25px rgba(0, 229, 255, 0.05), 0 0 15px rgba(0, 229, 255, 0.1)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.35)';
+                  e.currentTarget.style.boxShadow = 'inset 0 0 15px rgba(0, 229, 255, 0.02)';
+                }}
+              >
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(0, 229, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)' }}>
+                  <Camera size={26} />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.88rem', color: 'var(--cyan)', fontWeight: 800, display: 'block', marginBottom: '2px' }}>Start Camera Scanner</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Scan resident QR code passes</span>
+                </div>
+              </div>
             </div>
           </div>
 

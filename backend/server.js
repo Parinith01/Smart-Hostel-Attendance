@@ -571,7 +571,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'User ID and password are required.' });
     }
 
-    if (userId.length > 7) {
+    if (userId !== 'jsshostel' && userId.length > 7) {
       return res.status(400).json({ error: 'User ID must be at most 7 characters.' });
     }
 
@@ -899,7 +899,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
-    if (userId.length > 7) {
+    if (userId !== 'jsshostel' && userId.length > 7) {
       return res.status(400).json({ error: 'User ID must be at most 7 characters.' });
     }
 

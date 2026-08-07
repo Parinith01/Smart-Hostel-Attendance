@@ -369,9 +369,9 @@ const Login = () => {
                 className="input-field"
                 style={{ paddingLeft: '2.5rem' }}
                 value={userId}
-                onChange={(e) => setUserId(e.target.value.replace(/[^a-zA-Z0-9]/g, '').substring(0, 7))}
+                onChange={(e) => setUserId(e.target.value.replace(/[^a-zA-Z0-9]/g, '').substring(0, 9))}
                 placeholder={view === 'admin' ? "Admin ID" : "Student ID"}
-                maxLength={7}
+                maxLength={9}
                 required
               />
             </div>
@@ -919,9 +919,9 @@ const ForgotPassword = () => {
                   className="input-field"
                   style={{ paddingLeft: '2.5rem' }}
                   value={userId}
-                  onChange={(e) => setUserId(e.target.value.substring(0, 7))}
+                  onChange={(e) => setUserId(e.target.value.substring(0, 9))}
                   placeholder="User ID"
-                  maxLength={7}
+                  maxLength={9}
                   required
                 />
               </div>

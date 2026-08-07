@@ -1686,6 +1686,96 @@ const AdminDashboard = () => {
     } catch(e){showMsg('error',e.message);}
   };
 
+  function playBeep(type) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      if (type === 'success') {
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.15);
+      } else {
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.stop(ctx.currentTime + 0.3);
+      }
+    } catch (e) {
+      console.error('Audio beep failed:', e);
+    }
+  }
+
+  async function handleQrScan(scannedString) {
+    let tokenData;
+    try {
+      tokenData = JSON.parse(scannedString.trim());
+    } catch {
+      playBeep('error');
+      setScanResultModal({
+        show: true,
+        granted: false,
+        reason: 'Invalid pass code structure. Could not parse QR payload.'
+      });
+      return;
+    }
+
+    if (!tokenData || !tokenData.studentId || !tokenData.tokenNumber) {
+      playBeep('error');
+      setScanResultModal({
+        show: true,
+        granted: false,
+        reason: 'No valid token pass data found in QR payload.'
+      });
+      return;
+    }
+
+    try {
+      const res = await apiPost(`${API_BASE}/admin/tokens/verify-pass`, {
+        tokenNumber: tokenData.tokenNumber,
+        studentId: tokenData.studentId,
+        token_for_date: tokenData.token_for_date,
+        token_for_meal: tokenData.token_for_meal
+      });
+
+      if (res.success) {
+        playBeep('success');
+        setScanResultModal({
+          show: true,
+          granted: true,
+          studentName: res.studentName,
+          roomNumber: res.roomNumber,
+          block: res.block,
+          tokenNumber: res.tokenNumber,
+          meal: res.meal
+        });
+        loadAll();
+      } else {
+        playBeep('error');
+        setScanResultModal({
+          show: true,
+          granted: false,
+          reason: res.reason || 'Verification failed.',
+          studentName: res.studentName,
+          redeemedAt: res.redeemedAt
+        });
+      }
+    } catch (e) {
+      playBeep('error');
+      setScanResultModal({
+        show: true,
+        granted: false,
+        reason: e.message || 'Pass check failed. Database connection error.'
+      });
+    }
+  }
+
   // Debounced search for students
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -1740,7 +1830,7 @@ const AdminDashboard = () => {
         if (html5QrScanner.getState && html5QrScanner.getState() === 2) {
           html5QrScanner.stop().catch(console.error);
         }
-        setHtml5QrScanner(null);
+        setTimeout(() => setHtml5QrScanner(null), 0);
       }
     }
   }, [cameraActive]);
@@ -1823,148 +1913,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const bulkVerifyEmails = async () => {
-    // Only verify non-verified allowedEmails
-    const toVerify = allowedEmails.filter(e => !e.is_verified);
-    if (toVerify.length === 0) {
-      showMsg('success', 'All whitelisted emails are already verified.');
-      return;
-    }
 
-    if (window.confirm(`Verify ${toVerify.length} pending whitelisted email(s) now? Structurally invalid Gmail addresses and emails on domains without valid MX records will be permanently removed to prevent fake slots.`)) {
-      setVerifyLoading(true);
-      setMsg({ type: '', text: '' });
-      let checkedCount = 0;
-      let removedCount = 0;
-      
-      try {
-        for (const entry of toVerify) {
-          setCurrentlyVerifyingId(entry.id || entry.email);
-          // Show progress message
-          setMsg({ 
-            type: 'warning', 
-            text: `Verifying email ${checkedCount + 1} of ${toVerify.length}: ${entry.email}...` 
-          });
-          
-          const res = await apiPost(`${API_BASE}/admin/allowed-emails/verify-single`, { id: entry.id, email: entry.email });
-          
-          if (res.removed) {
-            removedCount++;
-            // Remove from the local state list immediately so the UI updates
-            setAllowedEmails(prev => prev.filter(item => (item.id || item.email) !== (entry.id || entry.email)));
-          } else if (res.verified) {
-            // Update the local state list immediately to show the verified badge
-            setAllowedEmails(prev => prev.map(item => (item.id || item.email) === (entry.id || entry.email) ? { ...item, is_verified: true } : item));
-          }
-          checkedCount++;
-        }
-        
-        // Final loadAll to sync with any other database changes
-        loadAll();
-        
-        if (removedCount > 0) {
-          showMsg('warning', `Verification complete. Checked ${checkedCount} email(s) and removed ${removedCount} fake or invalid account(s).`);
-        } else {
-          showMsg('success', `Verification complete. Checked ${checkedCount} email(s) and all are valid.`);
-        }
-      } catch (e) {
-        showMsg('error', e.message);
-      } finally {
-        setCurrentlyVerifyingId(null);
-        setVerifyLoading(false);
-      }
-    }
-  };
-
-  const playBeep = (type) => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      if (type === 'success') {
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        osc.stop(ctx.currentTime + 0.15);
-      } else {
-        osc.frequency.setValueAtTime(220, ctx.currentTime);
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        osc.stop(ctx.currentTime + 0.3);
-      }
-    } catch (e) {
-      console.error('Audio beep failed:', e);
-    }
-  };
-
-  const handleQrScan = async (scannedString) => {
-    let tokenData = null;
-    try {
-      tokenData = JSON.parse(scannedString.trim());
-    } catch (e) {
-      playBeep('error');
-      setScanResultModal({
-        show: true,
-        granted: false,
-        reason: 'Invalid pass code structure. Could not parse QR payload.'
-      });
-      return;
-    }
-
-    if (!tokenData || !tokenData.studentId || !tokenData.tokenNumber) {
-      playBeep('error');
-      setScanResultModal({
-        show: true,
-        granted: false,
-        reason: 'No valid token pass data found in QR payload.'
-      });
-      return;
-    }
-
-    try {
-      const res = await apiPost(`${API_BASE}/admin/tokens/verify-pass`, {
-        tokenNumber: tokenData.tokenNumber,
-        studentId: tokenData.studentId,
-        token_for_date: tokenData.token_for_date,
-        token_for_meal: tokenData.token_for_meal
-      });
-
-      if (res.success) {
-        playBeep('success');
-        setScanResultModal({
-          show: true,
-          granted: true,
-          studentName: res.studentName,
-          roomNumber: res.roomNumber,
-          block: res.block,
-          tokenNumber: res.tokenNumber,
-          meal: res.meal
-        });
-        loadAll();
-      } else {
-        playBeep('error');
-        setScanResultModal({
-          show: true,
-          granted: false,
-          reason: res.reason || 'Verification failed.',
-          studentName: res.studentName,
-          redeemedAt: res.redeemedAt
-        });
-      }
-    } catch (e) {
-      playBeep('error');
-      setScanResultModal({
-        show: true,
-        granted: false,
-        reason: e.message || 'Pass check failed. Database connection error.'
-      });
-    }
-  };
 
 
   const updateStatus = async (id, status) => {

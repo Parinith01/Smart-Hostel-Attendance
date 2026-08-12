@@ -497,7 +497,7 @@ const Register = () => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '2rem 0' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '90vh', padding: '2rem 0' }}>
       <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '520px', padding: '2.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', fontWeight: 800 }}>Resident Registration</h2>
@@ -577,15 +577,20 @@ const Register = () => {
 
             <div className="input-group">
               <label className="input-label">Block / Building</label>
-              <input
-                type="text"
+              <select
                 name="block"
                 className="input-field"
                 value={formData.block}
                 onChange={handleChange}
-                placeholder="B-Block"
                 required
-              />
+                style={{ appearance: 'auto', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-primary)' }}
+              >
+                <option value="" disabled style={{ color: '#000' }}>Select Block</option>
+                <option value="Old building" style={{ color: '#000' }}>Old building</option>
+                <option value="1st floor new building" style={{ color: '#000' }}>1st floor new building</option>
+                <option value="2nd floor new building" style={{ color: '#000' }}>2nd floor new building</option>
+                <option value="3rd floor new building" style={{ color: '#000' }}>3rd floor new building</option>
+              </select>
             </div>
           </div>
 
@@ -2428,12 +2433,12 @@ const AdminDashboard = () => {
               <div style={{padding:'1.25rem 1.5rem',borderRight:'1px solid var(--border)',textAlign:'center'}}>
                 <div style={{fontSize:'.62rem',fontWeight:800,color:'var(--green)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:'.35rem'}}>✓ VOTED PRESENT</div>
                 <div style={{fontSize:'2rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--green)',lineHeight:1}}>B:{rosterPresentB}</div>
-                <div style={{fontSize:'1.3rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--green)',lineHeight:1,marginTop:'.2rem'}}>D:{rosterPresentD}</div>
+                <div style={{fontSize:'2rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--green)',lineHeight:1,marginTop:'.2rem'}}>D:{rosterPresentD}</div>
               </div>
               <div style={{padding:'1.25rem 1.5rem',borderRight:'1px solid var(--border)',textAlign:'center'}}>
                 <div style={{fontSize:'.62rem',fontWeight:800,color:'var(--red)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:'.35rem'}}>✗ VOTED ABSENT</div>
                 <div style={{fontSize:'2rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--red)',lineHeight:1}}>B:{rosterAbsentB}</div>
-                <div style={{fontSize:'1.3rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--red)',lineHeight:1,marginTop:'.2rem'}}>D:{rosterAbsentD}</div>
+                <div style={{fontSize:'2rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--red)',lineHeight:1,marginTop:'.2rem'}}>D:{rosterAbsentD}</div>
               </div>
               <div style={{padding:'1.25rem 1.5rem',borderRight:'1px solid var(--border)',textAlign:'center'}}>
                 <div style={{fontSize:'.62rem',fontWeight:800,color:'var(--yellow)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:'.35rem'}}>◷ ON LONG LEAVE</div>
@@ -2443,7 +2448,7 @@ const AdminDashboard = () => {
               <div style={{padding:'1.25rem 1.5rem',textAlign:'center'}}>
                 <div style={{fontSize:'.62rem',fontWeight:800,color:'var(--text-3)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:'.35rem'}}>⊘ NOT VOTED</div>
                 <div style={{fontSize:'2rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--text-3)',lineHeight:1}}>B:{rosterNotVotedB}</div>
-                <div style={{fontSize:'1.3rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--text-3)',lineHeight:1,marginTop:'.2rem'}}>D:{rosterNotVotedD}</div>
+                <div style={{fontSize:'2rem',fontWeight:900,fontFamily:'var(--font-mono)',color:'var(--text-3)',lineHeight:1,marginTop:'.2rem'}}>D:{rosterNotVotedD}</div>
               </div>
             </div>
 
@@ -2981,17 +2986,32 @@ const AdminDashboard = () => {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin-login" element={<Navigate to="/login?type=admin" replace />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/verify" element={<VerifyOTP />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/student" element={<StudentDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin-login" element={<Navigate to="/login?type=admin" replace />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/verify" element={<VerifyOTP />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/student" element={<StudentDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </div>
+        <footer style={{
+          textAlign: 'center',
+          padding: '1.25rem',
+          color: 'var(--text-3)',
+          fontSize: '0.85rem',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg-card)',
+          letterSpacing: '0.05em'
+        }}>
+          Developed by <strong style={{ color: 'var(--cyan)' }}>Parinith C M</strong>
+        </footer>
+      </div>
     </BrowserRouter>
   );
 }

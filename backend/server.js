@@ -2421,7 +2421,7 @@ app.get('/api/admin/report/daily', requireAdmin, async (req, res) => {
       };
     });
 
-    generateDailyRosterPDF(res, date, meal_type.toLowerCase(), roster);
+    await generateDailyRosterPDF(res, date, meal_type.toLowerCase(), roster);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Server error generating daily report.' });
@@ -2444,7 +2444,10 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
     // Fetch all votes for this month
     const votes = await AttendanceVote.findAll({
       where: {
-        date: { [Op.like]: `${month}-%` }
+        date: {
+          [Op.gte]: `${month}-01`,
+          [Op.lte]: `${month}-31`
+        }
       }
     });
 
@@ -2469,7 +2472,7 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
       };
     });
 
-    generateMonthlySummaryPDF(res, month, summaryData);
+    await generateMonthlySummaryPDF(res, month, summaryData);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Server error generating monthly report.' });

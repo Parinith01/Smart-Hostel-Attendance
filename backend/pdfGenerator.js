@@ -14,12 +14,12 @@ export async function generateDailyRosterPDF(res, date, mealType, roster) {
   const accentLight = mealType === 'breakfast' ? '#00e5ff' : '#f06292';
 
   // ── Header Block ──────────────────────────────────────────────────────────
-  doc.fillColor('#0d0d1a').rect(50, 40, 495, 60).fill();
-  doc.fillColor('#ffffff').fontSize(16).font('Helvetica-Bold')
+  doc.lineWidth(2).strokeColor('#000000').rect(50, 40, 495, 60).stroke();
+  doc.fillColor('#000000').fontSize(16).font('Helvetica-Bold')
      .text('JSS MAIN BUILDING BOYS HOSTEL', 60, 50, { width: 480 });
-  doc.fillColor(accentLight).fontSize(10).font('Helvetica-Bold')
+  doc.fillColor('#000000').fontSize(10).font('Helvetica-Bold')
      .text(`DAILY ATTENDANCE ROSTER — ${mealType.toUpperCase()}`, 60, 70);
-  doc.fillColor('#aaaaaa').fontSize(8).font('Helvetica')
+  doc.fillColor('#444444').fontSize(8).font('Helvetica')
      .text(`DATE: ${date}   |   GENERATED: ${new Date().toLocaleDateString('en-GB', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })}`, 60, 84);
 
   // ── Stats Summary Row ─────────────────────────────────────────────────────
@@ -38,24 +38,24 @@ export async function generateDailyRosterPDF(res, date, mealType, roster) {
   const statsY = 115;
   const statW = 116;
   const stats = [
-    { label: 'TOTAL ACTIVE', value: totalStudents, color: '#555555', bg: '#f5f5f5' },
-    { label: 'VOTED PRESENT', value: presentList.length, color: '#2e7d32', bg: '#e8f5e9' },
-    { label: 'ABSENT',        value: absentList_c.length, color: '#c62828', bg: '#ffebee' },
-    { label: 'ON LEAVE',      value: onLeaveList_c.length, color: '#e65100', bg: '#fff3e0' },
+    { label: 'TOTAL ACTIVE', value: totalStudents, color: '#333333', borderColor: '#444444' },
+    { label: 'VOTED PRESENT', value: presentList.length, color: '#2e7d32', borderColor: '#2e7d32' },
+    { label: 'ABSENT',        value: absentList_c.length, color: '#c62828', borderColor: '#c62828' },
+    { label: 'ON LEAVE',      value: onLeaveList_c.length, color: '#e65100', borderColor: '#e65100' },
   ];
 
   stats.forEach((s, i) => {
     const x = 50 + i * (statW + 5);
-    doc.fillColor(s.bg).rect(x, statsY, statW, 45).fill();
+    doc.lineWidth(1).strokeColor(s.borderColor).rect(x, statsY, statW, 45).stroke();
     doc.fillColor(s.color).fontSize(7).font('Helvetica-Bold').text(s.label, x + 8, statsY + 8, { width: statW - 16 });
-    doc.fillColor('#111111').fontSize(18).font('Helvetica-Bold').text(String(s.value), x + 8, statsY + 20);
+    doc.fillColor('#000000').fontSize(18).font('Helvetica-Bold').text(String(s.value), x + 8, statsY + 20);
   });
 
   // Verified & Not-voted stats (last row)
   const verX = 50 + 4 * (statW + 5);
-  doc.fillColor('#e3f2fd').rect(verX, statsY, 120, 45).fill();
+  doc.lineWidth(1).strokeColor('#1565c0').rect(verX, statsY, 120, 45).stroke();
   doc.fillColor('#1565c0').fontSize(7).font('Helvetica-Bold').text('VERIFIED', verX + 8, statsY + 8, { width: 104 });
-  doc.fillColor('#111111').fontSize(18).font('Helvetica-Bold').text(String(verifiedList_c.length), verX + 8, statsY + 20);
+  doc.fillColor('#000000').fontSize(18).font('Helvetica-Bold').text(String(verifiedList_c.length), verX + 8, statsY + 20);
 
   let currentY = statsY + 60;
 
@@ -67,7 +67,7 @@ export async function generateDailyRosterPDF(res, date, mealType, roster) {
     if (currentY > 650) { doc.addPage(); currentY = 50; }
 
     // Section title bar
-    doc.fillColor(headerBg).rect(50, currentY, 495, 20).fill();
+    doc.lineWidth(1).strokeColor(titleColor).rect(50, currentY, 495, 20).stroke();
     doc.fillColor(titleColor).fontSize(9).font('Helvetica-Bold')
        .text(title.toUpperCase(), 60, currentY + 6, { width: 480 });
     currentY += 20;
@@ -188,12 +188,12 @@ export async function generateMonthlySummaryPDF(res, month, summaryData) {
   doc.pipe(res);
 
   // ── Header Block ──────────────────────────────────────────────────────────
-  doc.fillColor('#0d0d1a').rect(50, 40, 495, 60).fill();
-  doc.fillColor('#ffffff').fontSize(16).font('Helvetica-Bold')
+  doc.lineWidth(2).strokeColor('#000000').rect(50, 40, 495, 60).stroke();
+  doc.fillColor('#000000').fontSize(16).font('Helvetica-Bold')
      .text('JSS MAIN BUILDING BOYS HOSTEL', 60, 50, { width: 480 });
-  doc.fillColor('#00e5ff').fontSize(10).font('Helvetica-Bold')
+  doc.fillColor('#000000').fontSize(10).font('Helvetica-Bold')
      .text('COMBINED MONTHLY ATTENDANCE SUMMARY REPORT', 60, 70);
-  doc.fillColor('#aaaaaa').fontSize(8).font('Helvetica')
+  doc.fillColor('#444444').fontSize(8).font('Helvetica')
      .text(`MONTH: ${month}   |   GENERATED: ${new Date().toLocaleDateString('en-GB', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })}`, 60, 84);
 
   // ── Stats Row ─────────────────────────────────────────────────────────────
@@ -205,27 +205,27 @@ export async function generateMonthlySummaryPDF(res, month, summaryData) {
   const totalDAbsent  = summaryData.reduce((acc, s) => acc + s.dAbsent,  0);
 
   const mStats = [
-    { label: 'TOTAL STUDENTS',  value: totalStudents, color: '#555555', bg: '#f5f5f5' },
-    { label: 'BREAKFAST PRES.', value: totalBPresent,  color: '#2e7d32', bg: '#e8f5e9' },
-    { label: 'BREAKFAST ABS.',  value: totalBAbsent,   color: '#c62828', bg: '#ffebee' },
-    { label: 'DINNER PRESENT',  value: totalDPresent,  color: '#2e7d32', bg: '#e8f5e9' },
-    { label: 'DINNER ABSENT',   value: totalDAbsent,   color: '#c62828', bg: '#ffebee' },
+    { label: 'TOTAL STUDENTS',  value: totalStudents, color: '#333333', borderColor: '#444444' },
+    { label: 'BREAKFAST PRES.', value: totalBPresent,  color: '#2e7d32', borderColor: '#2e7d32' },
+    { label: 'BREAKFAST ABS.',  value: totalBAbsent,   color: '#c62828', borderColor: '#c62828' },
+    { label: 'DINNER PRESENT',  value: totalDPresent,  color: '#2e7d32', borderColor: '#2e7d32' },
+    { label: 'DINNER ABSENT',   value: totalDAbsent,   color: '#c62828', borderColor: '#c62828' },
   ];
 
   const mW = 94;
   mStats.forEach((s, i) => {
     const x = 50 + i * (mW + 4);
-    doc.fillColor(s.bg).rect(x, statsY, mW, 40).fill();
+    doc.lineWidth(1).strokeColor(s.borderColor).rect(x, statsY, mW, 40).stroke();
     doc.fillColor(s.color).fontSize(6.5).font('Helvetica-Bold').text(s.label, x + 6, statsY + 6, { width: mW - 12 });
-    doc.fillColor('#111111').fontSize(16).font('Helvetica-Bold').text(String(s.value), x + 6, statsY + 18);
+    doc.fillColor('#000000').fontSize(16).font('Helvetica-Bold').text(String(s.value), x + 6, statsY + 18);
   });
 
   // ── Table ─────────────────────────────────────────────────────────────────
   let currentY = statsY + 55;
 
   // Header row
-  doc.fillColor('#1a1a2e').rect(50, currentY, 495, 22).fill();
-  doc.fillColor('#ffffff').fontSize(7.5).font('Helvetica-Bold');
+  doc.lineWidth(1).strokeColor('#000000').rect(50, currentY, 495, 22).stroke();
+  doc.fillColor('#000000').fontSize(7.5).font('Helvetica-Bold');
   doc.text('SL', 60, currentY + 7, { width: 22 });
   doc.text('STUDENT ID', 85, currentY + 7, { width: 65 });
   doc.text('NAME', 155, currentY + 7, { width: 140 });
@@ -239,8 +239,8 @@ export async function generateMonthlySummaryPDF(res, month, summaryData) {
   summaryData.forEach((s, idx) => {
     if (currentY > 750) {
       doc.addPage(); currentY = 50;
-      doc.fillColor('#1a1a2e').rect(50, currentY, 495, 22).fill();
-      doc.fillColor('#ffffff').fontSize(7.5).font('Helvetica-Bold');
+      doc.lineWidth(1).strokeColor('#000000').rect(50, currentY, 495, 22).stroke();
+      doc.fillColor('#000000').fontSize(7.5).font('Helvetica-Bold');
       doc.text('SL', 60, currentY + 7, { width: 22 });
       doc.text('STUDENT ID', 85, currentY + 7, { width: 65 });
       doc.text('NAME', 155, currentY + 7, { width: 140 });

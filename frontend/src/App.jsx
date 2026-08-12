@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
+import { GraduationCap, Building, Code, Lightbulb, Linkedin, Github } from 'lucide-react';
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname.match(/^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./)) ? `http://${window.location.hostname}:5000/api` : 'https://jss-hostel-backend.vercel.app/api');
@@ -2983,7 +2984,186 @@ const AdminDashboard = () => {
   );
 };
 
+const CreatorProfile = ({ onClose }) => {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        animation: 'fadeIn 0.3s ease'
+      }}
+      onClick={onClose}
+    >
+      <div 
+        style={{
+          background: 'rgba(20, 20, 35, 0.85)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '1.5rem',
+          padding: '2.5rem',
+          maxWidth: '800px',
+          width: '100%',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          position: 'relative',
+          display: 'flex',
+          gap: '2.5rem',
+          alignItems: 'center',
+          animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}
+        onClick={e => e.stopPropagation()}
+        className="creator-profile-card"
+      >
+        <button 
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '1.5rem',
+            right: '1.5rem',
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: 'none',
+            color: 'var(--text-2)',
+            cursor: 'pointer',
+            padding: '0.5rem',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseOut={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = 'var(--text-2)'; }}
+        >
+          <XCircle size={20} />
+        </button>
+
+        <div className="creator-image-container">
+          <div style={{
+            width: '240px',
+            height: '240px',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            border: '4px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+            flexShrink: 0
+          }}>
+            <img 
+              src="/creator-profile.jpg" 
+              alt="Parinith C M" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transition: 'transform 0.5s ease'
+              }}
+              className="creator-image"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://ui-avatars.com/api/?name=Parinith+C+M&background=0D8ABC&color=fff&size=256";
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="creator-info-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: '#fff', letterSpacing: '-0.02em' }}>Parinith C M</h2>
+            <div style={{ color: 'var(--cyan)', fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Code size={18} /> Full Stack Developer
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1.25rem 0', borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-2)', fontSize: '0.95rem' }}>
+              <GraduationCap size={18} style={{ color: 'var(--text-1)' }} />
+              <span>B.Tech Computer Science & Engineering</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-2)', fontSize: '0.95rem', textAlign: 'left' }}>
+              <Building size={18} style={{ color: 'var(--text-1)', flexShrink: 0 }} />
+              <span>JSS Main Building Boys Hostel, Mysuru <span style={{ opacity: 0.7, fontStyle: 'italic', marginLeft: '0.2rem', whiteSpace: 'nowrap' }}>(Resident since 2024)</span></span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-2)', fontSize: '0.95rem' }}>
+              <Lightbulb size={18} style={{ color: 'var(--text-1)' }} />
+              <span>Website Creator & Developer</span>
+            </div>
+          </div>
+
+          <p style={{ color: 'var(--text-2)', lineHeight: 1.6, margin: 0, fontSize: '1rem', textAlign: 'left' }}>
+            Designed and developed this platform to provide hostel students with a simple, accessible, and useful digital experience.
+          </p>
+          
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-3)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', textAlign: 'left' }}>
+            Focus: Technology &middot; Innovation &middot; Student Solutions
+          </div>
+
+          <div className="social-links-container" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+            <a href="#" onClick={e => e.preventDefault()} className="social-icon-btn" title="LinkedIn"><Linkedin size={20} /></a>
+            <a href="#" onClick={e => e.preventDefault()} className="social-icon-btn" title="GitHub"><Github size={20} /></a>
+            <a href="#" onClick={e => e.preventDefault()} className="social-icon-btn" title="Email"><Mail size={20} /></a>
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .creator-image:hover { transform: scale(1.05); }
+        .social-icon-btn {
+          display: flex; align-items: center; justify-content: center;
+          width: 40px; height: 40px; border-radius: 50%;
+          background: rgba(255, 255, 255, 0.05); color: var(--text-2);
+          transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.1);
+          text-decoration: none;
+        }
+        .social-icon-btn:hover {
+          background: var(--cyan); color: #000;
+          transform: translateY(-2px); border-color: var(--cyan);
+          box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
+        }
+        @media (max-width: 768px) {
+          .creator-profile-card {
+            flex-direction: column;
+            text-align: center;
+            padding: 2rem 1.5rem !important;
+            gap: 1.5rem !important;
+          }
+          .creator-image-container {
+            margin: 0 auto;
+          }
+          .creator-info-container, .social-links-container {
+            align-items: center !important;
+          }
+          .creator-info-container > div {
+            justify-content: center !important;
+          }
+          .creator-info-container p, .creator-info-container > div:last-of-type {
+            text-align: center !important;
+          }
+          .creator-profile-card h2 {
+            font-size: 2rem !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 function App() {
+  const [showCreatorProfile, setShowCreatorProfile] = useState(false);
+
   return (
     <BrowserRouter>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -3005,12 +3185,30 @@ function App() {
           padding: '1.25rem',
           color: 'var(--text-3)',
           fontSize: '0.85rem',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--bg-card)',
-          letterSpacing: '0.05em'
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          background: 'transparent',
+          letterSpacing: '0.05em',
+          marginTop: 'auto'
         }}>
-          Developed by <strong style={{ color: 'var(--cyan)' }}>Parinith C M</strong>
+          &copy; 2026 &middot; Designed & Developed by <button 
+            onClick={() => setShowCreatorProfile(true)}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'var(--cyan)', 
+              fontWeight: 600, 
+              cursor: 'pointer', 
+              padding: 0, 
+              font: 'inherit',
+              transition: 'color 0.2s ease, text-shadow 0.2s ease'
+            }}
+            onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.textShadow = '0 0 8px rgba(0, 229, 255, 0.5)'; }}
+            onMouseOut={e => { e.currentTarget.style.color = 'var(--cyan)'; e.currentTarget.style.textShadow = 'none'; }}
+          >
+            Parinith C M
+          </button>
         </footer>
+        {showCreatorProfile && <CreatorProfile onClose={() => setShowCreatorProfile(false)} />}
       </div>
     </BrowserRouter>
   );

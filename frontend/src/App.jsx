@@ -2025,17 +2025,18 @@ const AdminDashboard = () => {
   const leftResidents = students.filter(s => s.status !== 'Active' && s.status !== 'Inactive');
   const pendingVerification = students.filter(s => s.status === 'Inactive');
 
-  const getRosterSortWeight = (s) => {
-    if (s.breakfast_vote === 'Present' || s.dinner_vote === 'Present') return 1;
-    if (s.breakfast_vote === 'Absent' || s.dinner_vote === 'Absent') return 2;
-    if (s.on_leave) return 3;
-    return 4; // Not voted
+  const parseRoom = (rm) => {
+    const match = rm.match(/^([A-Za-z\-\s]*)(\d+)(.*)$/);
+    if (match) return [match[1].trim().toLowerCase(), parseInt(match[2], 10), match[3].toLowerCase()];
+    return [rm.toLowerCase(), 0, ''];
   };
 
   const sortedRoster = [...roster].sort((a, b) => {
-    const wA = getRosterSortWeight(a);
-    const wB = getRosterSortWeight(b);
-    if (wA !== wB) return wA - wB;
+    const pA = parseRoom(a.room_number || '');
+    const pB = parseRoom(b.room_number || '');
+    if (pA[0] !== pB[0]) return pA[0].localeCompare(pB[0]);
+    if (pA[1] !== pB[1]) return pA[1] - pB[1];
+    if (pA[2] !== pB[2]) return pA[2].localeCompare(pB[2]);
     return a.name.localeCompare(b.name);
   });
 

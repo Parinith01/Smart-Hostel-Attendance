@@ -2021,24 +2021,26 @@ const AdminDashboard = () => {
     await downloadPDF(`${API_BASE}/admin/report/monthly?month=${reportMonth}`, `monthly_report_${reportMonth}.pdf`);
   };
 
-  const activeResidents = students.filter(s => s.status === 'Active');
-  const leftResidents = students.filter(s => s.status !== 'Active' && s.status !== 'Inactive');
-  const pendingVerification = students.filter(s => s.status === 'Inactive');
-
   const parseRoom = (rm) => {
     const match = rm.match(/^([A-Za-z\-\s]*)(\d+)(.*)$/);
     if (match) return [match[1].trim().toLowerCase(), parseInt(match[2], 10), match[3].toLowerCase()];
-    return [rm.toLowerCase(), 0, ''];
+    return [rm?.toLowerCase() || '', 0, ''];
   };
 
-  const sortedRoster = [...roster].sort((a, b) => {
+  const sortStudentsNatural = (arr) => [...arr].sort((a, b) => {
     const pA = parseRoom(a.room_number || '');
     const pB = parseRoom(b.room_number || '');
     if (pA[0] !== pB[0]) return pA[0].localeCompare(pB[0]);
     if (pA[1] !== pB[1]) return pA[1] - pB[1];
     if (pA[2] !== pB[2]) return pA[2].localeCompare(pB[2]);
-    return a.name.localeCompare(b.name);
+    return (a.name || '').localeCompare(b.name || '');
   });
+
+  const activeResidents = sortStudentsNatural(students.filter(s => s.status === 'Active'));
+  const leftResidents = sortStudentsNatural(students.filter(s => s.status !== 'Active' && s.status !== 'Inactive'));
+  const pendingVerification = sortStudentsNatural(students.filter(s => s.status === 'Inactive'));
+
+  const sortedRoster = sortStudentsNatural(roster);
 
   // Roster count stats for display
   const rosterPresentB = roster.filter(r => r.breakfast_vote === 'Present').length;

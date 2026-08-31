@@ -2096,9 +2096,15 @@ const AdminDashboard = () => {
         {tab==='dashboard' && (<>
           {/* Date Row */}
           <div className="date-row">
-            <span className="date-display">{rosterDate}</span>
-            <button className="date-btn active" onClick={setToday}>TODAY</button>
-            <button className="date-btn" onClick={setTomorrow}>TOMORROW</button>
+            <input 
+              type="date" 
+              className="input-field" 
+              style={{ width: 'auto', padding: '0.4rem', fontSize: '0.9rem', marginRight: '0.5rem', background: 'var(--bg-card)' }}
+              value={rosterDate} 
+              onChange={(e) => setRosterDate(e.target.value)}
+            />
+            <button className={`date-btn ${rosterDate === today ? 'active' : ''}`} onClick={setToday}>TODAY</button>
+            <button className={`date-btn ${rosterDate !== today ? 'active' : ''}`} onClick={setTomorrow}>TOMORROW</button>
             <span className="date-row-sep"/>
             <div className="quick-btns">
               <button className="btn btn-cyan" style={{fontSize:'.75rem'}} onClick={()=>setTab('directory')}><Shield size={13}/> MANAGE DIRECTORY</button>

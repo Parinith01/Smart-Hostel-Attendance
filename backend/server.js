@@ -2135,8 +2135,13 @@ app.get('/api/admin/attendance-roster', requireAdmin, async (req, res) => {
     const { date } = req.query;
     const targetDate = date || getISTDateString();
 
+    const endOfDay = new Date(`${targetDate}T23:59:59.999Z`);
     const students = await Student.findAll({
-      where: { role: 'student', status: 'Active' },
+      where: { 
+        role: 'student', 
+        status: 'Active',
+        createdAt: { [Op.lte]: endOfDay }
+      },
       order: [['room_number', 'ASC'], ['name', 'ASC']]
     });
 
@@ -2385,8 +2390,13 @@ app.get('/api/admin/report/daily', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'date and meal_type parameters are required.' });
     }
 
+    const endOfDay = new Date(`${date}T23:59:59.999Z`);
     const students = await Student.findAll({
-      where: { role: 'student', status: 'Active' },
+      where: { 
+        role: 'student', 
+        status: 'Active',
+        createdAt: { [Op.lte]: endOfDay }
+      },
       order: [['room_number', 'ASC'], ['name', 'ASC']]
     });
 
@@ -2436,8 +2446,12 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Valid month parameter (YYYY-MM) is required.' });
     }
 
+    const endOfMonth = new Date(`${month}-31T23:59:59.999Z`);
     const students = await Student.findAll({
-      where: { role: 'student' },
+      where: { 
+        role: 'student',
+        createdAt: { [Op.lte]: endOfMonth }
+      },
       order: [['room_number', 'ASC'], ['name', 'ASC']]
     });
 

@@ -1862,7 +1862,6 @@ const AdminDashboard = () => {
   }, [cameraActive]);
 
   const setToday = () => { const d=new Date().toISOString().split('T')[0]; setRosterDate(d); };
-  const setTomorrow = () => { const d=new Date(Date.now()+86400000).toISOString().split('T')[0]; setRosterDate(d); };
 
   const verify = async (student_id, meal_type, currently) => {
     try { await apiPost(`${API_BASE}/admin/verify-attendance`,{student_id,date:rosterDate,meal_type,verify:!currently}); loadRoster(rosterDate); }
@@ -2104,7 +2103,6 @@ const AdminDashboard = () => {
               onChange={(e) => setRosterDate(e.target.value)}
             />
             <button className={`date-btn ${rosterDate === today ? 'active' : ''}`} onClick={setToday}>TODAY</button>
-            <button className={`date-btn ${rosterDate !== today ? 'active' : ''}`} onClick={setTomorrow}>TOMORROW</button>
             <span className="date-row-sep"/>
             <div className="quick-btns">
               <button className="btn btn-cyan" style={{fontSize:'.75rem'}} onClick={()=>setTab('directory')}><Shield size={13}/> MANAGE DIRECTORY</button>

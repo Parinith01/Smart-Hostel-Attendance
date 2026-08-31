@@ -989,17 +989,24 @@ app.get('/api/student/dashboard', authenticateToken, async (req, res) => {
     if (!student) return res.status(404).json({ error: 'Student not found.' });
 
     const todayStr = getISTDateString();
+    const tomorrowStr = new Date(getISTDate().getTime() + 86400000).toISOString().split('T')[0];
+    const currentHHMM = getISTHHMM();
 
-    // Find today's breakfast and dinner votes
+    // Fetch both today and tomorrow votes
     const votes = await AttendanceVote.findAll({
       where: {
         student_id: student.id,
-        date: todayStr
+        date: { [Op.in]: [todayStr, tomorrowStr] }
       }
     });
 
-    const breakfastVote = votes.find(v => v.meal_type === 'breakfast')?.status || 'None';
-    const dinnerVote = votes.find(v => v.meal_type === 'dinner')?.status || 'None';
+    // Dinner is always today's vote
+    const dinnerVote = votes.find(v => v.meal_type === 'dinner' && v.date === todayStr)?.status || 'None';
+    
+    // Breakfast: If it's past 16:00, they are voting for tomorrow's breakfast, so show tomorrow's status.
+    // If it's before 16:00 (morning/afternoon), show today's breakfast status.
+    const bDate = currentHHMM >= '16:00' ? tomorrowStr : todayStr;
+    const breakfastVote = votes.find(v => v.meal_type === 'breakfast' && v.date === bDate)?.status || 'None';
 
     // Calculate remaining absences in the CURRENT month
     const startOfMonth = new Date(getISTDate().getUTCFullYear(), getISTDate().getUTCMonth(), 1);
@@ -1096,10 +1103,14 @@ app.post('/api/student/vote', authenticateToken, async (req, res) => {
         return_meal: meal_type === 'breakfast' ? 'dinner' : 'breakfast' // opposite meal return
       });
     }
+    // Determine the actual date the vote applies to
+    const targetDate = meal_type === 'breakfast' 
+      ? new Date(getISTDate().getTime() + 86400000).toISOString().split('T')[0] // Tomorrow
+      : todayStr; // Today for dinner
 
     // Upsert vote
     const [vote, created] = await AttendanceVote.findOrCreate({
-      where: { student_id: studentId, date: todayStr, meal_type },
+      where: { student_id: studentId, date: targetDate, meal_type },
       defaults: { status }
     });
 

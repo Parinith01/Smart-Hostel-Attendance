@@ -1495,10 +1495,12 @@ app.post('/api/admin/leave-requests/:id/action', requireAdmin, async (req, res) 
 
       return res.json({ success: true, message: 'Leave approved and absences registered.' });
 
-    } else if (action === 'Reject') {
-      leave.status = 'Rejected';
+    } else if (action === 'Reject' || action === 'Revoke') {
+      leave.status = action === 'Revoke' ? 'Revoked' : 'Rejected';
       await leave.save();
-      return res.json({ success: true, message: 'Leave request rejected.' });
+
+      // If Revoking, we might want to clean up the future absent votes, but for now just updating status is enough to stop them from appearing as ON LEAVE.
+      return res.json({ success: true, message: `Leave request ${action.toLowerCase()}d.` });
     }
 
     return res.status(400).json({ error: 'Invalid action.' });
@@ -2176,7 +2178,7 @@ app.get('/api/admin/attendance-roster', requireAdmin, async (req, res) => {
       const bVerify = verifications.find(v => v.student_id === s.id && v.meal_type === 'breakfast');
       const dVerify = verifications.find(v => v.student_id === s.id && v.meal_type === 'dinner');
       const tok = tokens.find(t => t.student_id === s.id);
-      const onLeave = activeLeaves.some(l => l.student_id === s.id);
+      const leaveObj = activeLeaves.find(l => l.student_id === s.id);
 
       return {
         id: s.id, name: s.name, room_number: s.room_number, block: s.block,
@@ -2185,7 +2187,8 @@ app.get('/api/admin/attendance-roster', requireAdmin, async (req, res) => {
         breakfast_verified: !!bVerify?.is_verified,
         dinner_verified: !!dVerify?.is_verified,
         token: tok ? { number: tok.token_number, for_date: tok.token_for_date } : null,
-        on_leave: onLeave
+        on_leave: !!leaveObj,
+        leave_id: leaveObj ? leaveObj.id : null
       };
     });
 

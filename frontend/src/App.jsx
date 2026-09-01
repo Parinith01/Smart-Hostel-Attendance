@@ -1908,6 +1908,17 @@ const AdminDashboard = () => {
     }
   };
 
+  const revokeLongLeave = async (leave_id) => {
+    if (!window.confirm('Are you sure you want to revoke this long leave? This will mark them as active again.')) return;
+    try {
+      await apiPost(`${API_BASE}/admin/leave-requests/${leave_id}/action`, { action: 'Revoke' });
+      showMsg('success', 'Long leave revoked successfully.');
+      loadRoster(rosterDate);
+    } catch (e) {
+      showMsg('error', e.message);
+    }
+  };
+
   const addEmail = async (e) => {
     e.preventDefault();
     try { 
@@ -2508,22 +2519,13 @@ const AdminDashboard = () => {
                             {s.on_leave ? '◷' : s.breakfast_vote==='Present' ? '✓' : s.breakfast_vote==='Absent' ? '✗' : '⊘'}
                             {' '}{s.on_leave ? 'ON LEAVE' : s.breakfast_vote.toUpperCase()}
                             {s.breakfast_vote === 'Absent' && !s.on_leave && (
-                              <button 
-                                onClick={() => revokeAbsence(s.id, 'breakfast')}
-                                title="Revoke absence and allow student to vote again"
-                                style={{
-                                  background: 'rgba(255, 23, 68, 0.1)',
-                                  border: '1px solid rgba(255, 23, 68, 0.3)',
-                                  color: 'var(--red)',
-                                  fontSize: '0.62rem',
-                                  padding: '1px 5px',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  marginLeft: '8px',
-                                  fontWeight: 800
-                                }}
-                              >
+                              <button onClick={() => revokeAbsence(s.id, 'breakfast')} title="Revoke absence and allow student to vote again" style={{ background: 'rgba(255, 23, 68, 0.1)', border: '1px solid rgba(255, 23, 68, 0.3)', color: 'var(--red)', fontSize: '0.62rem', padding: '1px 5px', borderRadius: '4px', cursor: 'pointer', marginLeft: '8px', fontWeight: 800 }}>
                                 REVOKE
+                              </button>
+                            )}
+                            {s.on_leave && (
+                              <button onClick={() => revokeLongLeave(s.leave_id)} title="Revoke long leave" style={{ background: 'rgba(255, 214, 0, 0.1)', border: '1px solid rgba(255, 214, 0, 0.3)', color: 'var(--yellow)', fontSize: '0.62rem', padding: '1px 5px', borderRadius: '4px', cursor: 'pointer', marginLeft: '8px', fontWeight: 800 }}>
+                                REVOKE LEAVE
                               </button>
                             )}
                           </div>
@@ -2534,10 +2536,10 @@ const AdminDashboard = () => {
                               style={{ 
                                 width: 'fit-content', 
                                 fontSize: '0.65rem', 
-                                opacity: s.breakfast_vote !== 'Present' ? 0.3 : 1, 
-                                cursor: s.breakfast_vote !== 'Present' ? 'not-allowed' : 'pointer' 
+                                opacity: (s.breakfast_vote === 'Present' || s.on_leave) ? 1 : 0.3, 
+                                cursor: (s.breakfast_vote === 'Present' || s.on_leave) ? 'pointer' : 'not-allowed' 
                               }}
-                              disabled={s.breakfast_vote !== 'Present'}
+                              disabled={s.breakfast_vote !== 'Present' && !s.on_leave}
                             >
                               {s.breakfast_verified?'✓ VERIFIED':'VERIFY'}
                             </button>
@@ -2569,22 +2571,13 @@ const AdminDashboard = () => {
                             {s.on_leave ? '◷' : s.dinner_vote==='Present' ? '✓' : s.dinner_vote==='Absent' ? '✗' : '⊘'}
                             {' '}{s.on_leave ? 'ON LEAVE' : s.dinner_vote.toUpperCase()}
                             {s.dinner_vote === 'Absent' && !s.on_leave && (
-                              <button 
-                                onClick={() => revokeAbsence(s.id, 'dinner')}
-                                title="Revoke absence and allow student to vote again"
-                                style={{
-                                  background: 'rgba(255, 23, 68, 0.1)',
-                                  border: '1px solid rgba(255, 23, 68, 0.3)',
-                                  color: 'var(--red)',
-                                  fontSize: '0.62rem',
-                                  padding: '1px 5px',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  marginLeft: '8px',
-                                  fontWeight: 800
-                                }}
-                              >
+                              <button onClick={() => revokeAbsence(s.id, 'dinner')} title="Revoke absence and allow student to vote again" style={{ background: 'rgba(255, 23, 68, 0.1)', border: '1px solid rgba(255, 23, 68, 0.3)', color: 'var(--red)', fontSize: '0.62rem', padding: '1px 5px', borderRadius: '4px', cursor: 'pointer', marginLeft: '8px', fontWeight: 800 }}>
                                 REVOKE
+                              </button>
+                            )}
+                            {s.on_leave && (
+                              <button onClick={() => revokeLongLeave(s.leave_id)} title="Revoke long leave" style={{ background: 'rgba(255, 214, 0, 0.1)', border: '1px solid rgba(255, 214, 0, 0.3)', color: 'var(--yellow)', fontSize: '0.62rem', padding: '1px 5px', borderRadius: '4px', cursor: 'pointer', marginLeft: '8px', fontWeight: 800 }}>
+                                REVOKE LEAVE
                               </button>
                             )}
                           </div>
@@ -2595,10 +2588,10 @@ const AdminDashboard = () => {
                               style={{ 
                                 width: 'fit-content', 
                                 fontSize: '0.65rem', 
-                                opacity: s.dinner_vote !== 'Present' ? 0.3 : 1, 
-                                cursor: s.dinner_vote !== 'Present' ? 'not-allowed' : 'pointer' 
+                                opacity: (s.dinner_vote === 'Present' || s.on_leave) ? 1 : 0.3, 
+                                cursor: (s.dinner_vote === 'Present' || s.on_leave) ? 'pointer' : 'not-allowed' 
                               }}
-                              disabled={s.dinner_vote !== 'Present'}
+                              disabled={s.dinner_vote !== 'Present' && !s.on_leave}
                             >
                               {s.dinner_verified?'✓ VERIFIED':'VERIFY'}
                             </button>

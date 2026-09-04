@@ -4,7 +4,11 @@
  */
 export async function generateDailyRosterPDF(res, date, mealType, roster) {
   const { default: PDFDocument } = await import('pdfkit');
-  const doc = new PDFDocument({ margin: 50, size: 'A4', bufferPages: true, autoPageBreak: false });
+  const doc = new PDFDocument({ 
+    margins: { top: 50, bottom: 20, left: 50, right: 50 }, 
+    size: 'A4', 
+    bufferPages: true 
+  });
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="roster_${mealType}_${date}.pdf"`);
@@ -181,7 +185,11 @@ export async function generateDailyRosterPDF(res, date, mealType, roster) {
  */
 export async function generateMonthlySummaryPDF(res, month, summaryData) {
   const { default: PDFDocument } = await import('pdfkit');
-  const doc = new PDFDocument({ margin: 50, size: 'A4', bufferPages: true, autoPageBreak: false });
+  const doc = new PDFDocument({ 
+    margins: { top: 50, bottom: 20, left: 50, right: 50 }, 
+    size: 'A4', 
+    bufferPages: true 
+  });
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="monthly_report_${month}.pdf"`);

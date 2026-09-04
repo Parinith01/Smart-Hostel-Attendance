@@ -2500,9 +2500,8 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
       const studentVerifs = verifications.filter(v => v.student_id === s.id);
       const studentLeaves = leaves.filter(l => l.student_id === s.id);
       
-      let totalPresent = 0;
-      let totalAbsent = 0;
-      let totalLeave = 0;
+      let bPresent = 0, bAbsent = 0, bLeave = 0;
+      let dPresent = 0, dAbsent = 0, dLeave = 0;
 
       // Only count days since the student was created/joined
       const joinDateStr = s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : '1970-01-01';
@@ -2515,7 +2514,8 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
         const onLeave = studentLeaves.some(l => dateStr >= l.start_date && dateStr <= l.end_date);
         
         if (onLeave) {
-          totalLeave++;
+          bLeave++;
+          dLeave++;
           continue;
         }
 
@@ -2525,14 +2525,8 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
         const bVerify = studentVerifs.some(v => v.date === dateStr && v.meal_type === 'breakfast');
         const dVerify = studentVerifs.some(v => v.date === dateStr && v.meal_type === 'dinner');
         
-        const bIsPresent = bVote?.status === 'Present' && bVerify;
-        const dIsPresent = dVote?.status === 'Present' && dVerify;
-        
-        if (bIsPresent && dIsPresent) {
-           totalPresent++;
-        } else {
-           totalAbsent++;
-        }
+        if (bVote?.status === 'Present' && bVerify) bPresent++; else bAbsent++;
+        if (dVote?.status === 'Present' && dVerify) dPresent++; else dAbsent++;
       }
 
       return {
@@ -2540,9 +2534,8 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
         name: s.name,
         room_number: s.room_number,
         block: s.block,
-        totalPresent,
-        totalAbsent,
-        totalLeave
+        bPresent, bAbsent, bLeave,
+        dPresent, dAbsent, dLeave
       };
     });
 

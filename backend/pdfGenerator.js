@@ -199,22 +199,24 @@ export async function generateMonthlySummaryPDF(res, month, summaryData) {
   // ── Stats Row ─────────────────────────────────────────────────────────────
   const statsY = 115;
   const totalStudents = summaryData.length;
-  const totalPresent = summaryData.reduce((acc, s) => acc + s.totalPresent, 0);
-  const totalAbsent  = summaryData.reduce((acc, s) => acc + s.totalAbsent,  0);
-  const totalLeave   = summaryData.reduce((acc, s) => acc + s.totalLeave,   0);
+  const tBPres = summaryData.reduce((acc, s) => acc + s.bPresent, 0);
+  const tBAbs  = summaryData.reduce((acc, s) => acc + s.bAbsent,  0);
+  const tDPres = summaryData.reduce((acc, s) => acc + s.dPresent, 0);
+  const tDAbs  = summaryData.reduce((acc, s) => acc + s.dAbsent,  0);
 
   const mStats = [
     { label: 'TOTAL STUDENTS',  value: totalStudents, color: '#333333', borderColor: '#444444' },
-    { label: 'TOTAL PRESENT',   value: totalPresent,  color: '#2e7d32', borderColor: '#2e7d32' },
-    { label: 'TOTAL ABSENT',    value: totalAbsent,   color: '#c62828', borderColor: '#c62828' },
-    { label: 'APPROVED LEAVE',  value: totalLeave,    color: '#f9a825', borderColor: '#f9a825' },
+    { label: 'BREAKFAST PRES.', value: tBPres,  color: '#2e7d32', borderColor: '#2e7d32' },
+    { label: 'BREAKFAST ABS.',  value: tBAbs,   color: '#c62828', borderColor: '#c62828' },
+    { label: 'DINNER PRESENT',  value: tDPres,  color: '#2e7d32', borderColor: '#2e7d32' },
+    { label: 'DINNER ABSENT',   value: tDAbs,   color: '#c62828', borderColor: '#c62828' },
   ];
 
-  const mW = 110; // Wider since there are fewer boxes
+  const mW = 94;
   mStats.forEach((s, i) => {
-    const x = 50 + i * (mW + 15);
+    const x = 50 + i * (mW + 4);
     doc.lineWidth(1).strokeColor(s.borderColor).rect(x, statsY, mW, 40).stroke();
-    doc.fillColor(s.color).fontSize(7).font('Helvetica-Bold').text(s.label, x + 6, statsY + 6, { width: mW - 12 });
+    doc.fillColor(s.color).fontSize(6.5).font('Helvetica-Bold').text(s.label, x + 6, statsY + 6, { width: mW - 12 });
     doc.fillColor('#000000').fontSize(16).font('Helvetica-Bold').text(String(s.value), x + 6, statsY + 18);
   });
 
@@ -228,9 +230,12 @@ export async function generateMonthlySummaryPDF(res, month, summaryData) {
   doc.text('STUDENT ID', 85, currentY + 7, { width: 65 });
   doc.text('NAME', 155, currentY + 7, { width: 140 });
   doc.text('ROOM & BLOCK', 305, currentY + 7, { width: 100 });
-  doc.text('PRESENT', 415, currentY + 7, { width: 40, align: 'center' });
-  doc.text('ABSENT', 460, currentY + 7, { width: 40, align: 'center' });
-  doc.text('LEAVE', 505, currentY + 7, { width: 40, align: 'center' });
+  
+  doc.text('BREAKFAST', 395, currentY + 3, { width: 65, align: 'center' });
+  doc.text('P | A | L', 395, currentY + 12, { width: 65, align: 'center' });
+  
+  doc.text('DINNER', 475, currentY + 3, { width: 65, align: 'center' });
+  doc.text('P | A | L', 475, currentY + 12, { width: 65, align: 'center' });
   currentY += 22;
 
   summaryData.forEach((s, idx) => {
@@ -242,9 +247,10 @@ export async function generateMonthlySummaryPDF(res, month, summaryData) {
       doc.text('STUDENT ID', 85, currentY + 7, { width: 65 });
       doc.text('NAME', 155, currentY + 7, { width: 140 });
       doc.text('ROOM & BLOCK', 305, currentY + 7, { width: 100 });
-      doc.text('PRESENT', 415, currentY + 7, { width: 40, align: 'center' });
-      doc.text('ABSENT', 460, currentY + 7, { width: 40, align: 'center' });
-      doc.text('LEAVE', 505, currentY + 7, { width: 40, align: 'center' });
+      doc.text('BREAKFAST', 395, currentY + 3, { width: 65, align: 'center' });
+      doc.text('P | A | L', 395, currentY + 12, { width: 65, align: 'center' });
+      doc.text('DINNER', 475, currentY + 3, { width: 65, align: 'center' });
+      doc.text('P | A | L', 475, currentY + 12, { width: 65, align: 'center' });
       currentY += 22;
     }
 
@@ -260,9 +266,20 @@ export async function generateMonthlySummaryPDF(res, month, summaryData) {
     doc.text(`${s.room_number} (${s.block})`, 305, currentY + 6, { width: 100 });
 
     doc.font('Helvetica-Bold');
-    doc.fillColor('#2e7d32').text(String(s.totalPresent), 415, currentY + 6, { width: 40, align: 'center' });
-    doc.fillColor('#c62828').text(String(s.totalAbsent), 460, currentY + 6, { width: 40, align: 'center' });
-    doc.fillColor('#f9a825').text(String(s.totalLeave), 505, currentY + 6, { width: 40, align: 'center' });
+    
+    // Breakfast
+    doc.fillColor('#2e7d32').text(String(s.bPresent), 395, currentY + 6, { width: 15, align: 'right' });
+    doc.fillColor('#aaaaaa').text('|', 415, currentY + 6, { width: 10 });
+    doc.fillColor('#c62828').text(String(s.bAbsent), 425, currentY + 6, { width: 15, align: 'left' });
+    doc.fillColor('#aaaaaa').text('|', 437, currentY + 6, { width: 10 });
+    doc.fillColor('#f9a825').text(String(s.bLeave), 445, currentY + 6, { width: 15, align: 'left' });
+
+    // Dinner
+    doc.fillColor('#2e7d32').text(String(s.dPresent), 475, currentY + 6, { width: 15, align: 'right' });
+    doc.fillColor('#aaaaaa').text('|', 495, currentY + 6, { width: 10 });
+    doc.fillColor('#c62828').text(String(s.dAbsent), 505, currentY + 6, { width: 15, align: 'left' });
+    doc.fillColor('#aaaaaa').text('|', 517, currentY + 6, { width: 10 });
+    doc.fillColor('#f9a825').text(String(s.dLeave), 525, currentY + 6, { width: 15, align: 'left' });
 
     currentY += 20;
   });

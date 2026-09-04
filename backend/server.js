@@ -2502,6 +2502,7 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
       
       let bPresent = 0, bAbsent = 0, bLeave = 0;
       let dPresent = 0, dAbsent = 0, dLeave = 0;
+      let validDays = 0;
 
       // Only count days since the student was created/joined
       const joinDateStr = s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : '1970-01-01';
@@ -2510,6 +2511,7 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
         const dateStr = `${year}-${String(mth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         
         if (dateStr < joinDateStr) continue; // Not a resident yet
+        validDays++;
 
         const onLeave = studentLeaves.some(l => dateStr >= l.start_date && dateStr <= l.end_date);
         
@@ -2529,13 +2531,17 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
         if (dVote?.status === 'Present' && dVerify) dPresent++; else dAbsent++;
       }
 
+      const bPercent = validDays > 0 ? Math.round(((bPresent + bLeave) / validDays) * 100) : 0;
+      const dPercent = validDays > 0 ? Math.round(((dPresent + dLeave) / validDays) * 100) : 0;
+
       return {
         id: s.id,
         name: s.name,
         room_number: s.room_number,
         block: s.block,
-        bPresent, bAbsent, bLeave,
-        dPresent, dAbsent, dLeave
+        validDays,
+        bPresent, bAbsent, bLeave, bPercent,
+        dPresent, dAbsent, dLeave, dPercent
       };
     });
 

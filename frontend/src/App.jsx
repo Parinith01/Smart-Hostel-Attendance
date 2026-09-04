@@ -1993,6 +1993,16 @@ const AdminDashboard = () => {
     a.download=`students_${rosterDate}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
+  const exportExcel = () => {
+    if(!students.length) return;
+    const rows = students.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.email}</td><td>${s.phone}</td><td>${s.room_number}</td><td>${s.block}</td><td>${s.join_year}</td><td>${s.status}</td></tr>`).join('');
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8" /></head><body><table border="1"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th><th>Block</th><th>Year</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const a = document.createElement('a'); 
+    a.href = 'data:application/vnd.ms-excel;base64,' + btoa(unescape(encodeURIComponent(html)));
+    a.download = `students_${rosterDate}.xls`; 
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+
   const downloadPDF = async (url, filename) => {
     try {
       const res = await fetch(url, {
@@ -2824,7 +2834,11 @@ const AdminDashboard = () => {
                 <option value="">All Statuses</option>
                 {['Active','Inactive','Suspended','Left Hostel','Suspicious','Completed'].map(s=><option key={s} value={s}>{s}</option>)}
               </select>
-              <button className="btn btn-secondary" style={{fontSize:'.78rem'}} onClick={exportCSV}>Export CSV</button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn btn-secondary" style={{fontSize:'.78rem'}} onClick={exportCSV}>Export CSV</button>
+                <button className="btn btn-secondary" style={{fontSize:'.78rem'}} onClick={exportExcel}>Export Excel</button>
+                <button className="btn btn-secondary" style={{fontSize:'.78rem'}} onClick={() => downloadPDF(`${API_BASE}/admin/export/residents-pdf`, 'active_residents.pdf')}>Export PDF</button>
+              </div>
             </div>
             <div className="cyber-table-wrap">
               <table className="cyber-table">

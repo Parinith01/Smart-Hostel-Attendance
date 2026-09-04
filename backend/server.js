@@ -29,7 +29,7 @@ import {
   WebAuthnCredential
 } from './database.js';
 import { sendOtpEmail } from './mockMailer.js';
-import { generateDailyRosterPDF, generateMonthlySummaryPDF } from './pdfGenerator.js';
+import { generateDailyRosterPDF, generateMonthlySummaryPDF, generateResidentsPDF } from './pdfGenerator.js';
 import { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse } from '@simplewebauthn/server';
 
 dotenv.config();
@@ -2652,6 +2652,36 @@ app.get('/api/admin/rebates/summary', requireAdmin, async (req, res) => {
 });
 
 import { fileURLToPath } from 'url';
+
+app.get('/api/admin/export/residents-pdf', requireAdmin, async (req, res) => {
+  try {
+    const students = await Student.findAll({
+      where: { role: 'student' },
+      order: [['room_number', 'ASC'], ['name', 'ASC']]
+    });
+    
+    // Sort logically like the frontend does
+    const parseRoom = (rm) => {
+      if (!rm) return { block: '', num: 0, suffix: '' };
+      const m = rm.toString().match(/^([A-Za-z\-\s]*)(\d+)(.*)$/);
+      if (m) return { block: m[1].trim(), num: parseInt(m[2], 10), suffix: m[3].trim() };
+      return { block: rm.toString(), num: 0, suffix: '' };
+    };
+
+    students.sort((a, b) => {
+      const pA = parseRoom(a.room_number);
+      const pB = parseRoom(b.room_number);
+      if (pA.block !== pB.block) return pA.block.localeCompare(pB.block);
+      if (pA.num !== pB.num) return pA.num - pB.num;
+      return pA.suffix.localeCompare(pB.suffix);
+    });
+
+    await generateResidentsPDF(res, students);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error generating PDF' });
+  }
+});
 
 // Start Server if executed directly
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

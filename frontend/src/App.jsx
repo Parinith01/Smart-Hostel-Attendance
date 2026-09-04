@@ -1987,16 +1987,16 @@ const AdminDashboard = () => {
 
   const exportCSV = () => {
     if(!students.length) return;
-    const rows = students.map(s=>[s.id,s.name,s.email,s.phone,s.room_number,s.block,s.join_year,s.status].join(','));
-    const csv = 'ID,Name,Email,Phone,Room,Block,Year,Status\n'+rows.join('\n');
+    const rows = students.map(s=>[s.id,s.name,s.email,s.phone,s.room_number,s.block,s.join_year,s.leaving_year || '-',s.status].join(','));
+    const csv = 'ID,Name,Email,Phone,Room,Block,Join Year,Leave Year,Status\n'+rows.join('\n');
     const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download=`students_${rosterDate}.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
   const exportExcel = () => {
     if(!students.length) return;
-    const rows = students.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.email}</td><td>${s.phone}</td><td>${s.room_number}</td><td>${s.block}</td><td>${s.join_year}</td><td>${s.status}</td></tr>`).join('');
-    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8" /></head><body><table border="1"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th><th>Block</th><th>Year</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const rows = students.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.email}</td><td>${s.phone}</td><td>${s.room_number}</td><td>${s.block}</td><td>${s.join_year}</td><td>${s.leaving_year || '-'}</td><td>${s.status}</td></tr>`).join('');
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8" /></head><body><table border="1"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Room</th><th>Block</th><th>Join Year</th><th>Leave Year</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
     const a = document.createElement('a'); 
     a.href = 'data:application/vnd.ms-excel;base64,' + btoa(unescape(encodeURIComponent(html)));
     a.download = `students_${rosterDate}.xls`; 

@@ -319,7 +319,8 @@ export async function generateResidentsPDF(res, students) {
   const { default: PDFDocument } = await import('pdfkit');
   const doc = new PDFDocument({ 
     margins: { top: 50, bottom: 20, left: 50, right: 50 }, 
-    size: 'A4', 
+    size: 'A4',
+    layout: 'landscape',
     bufferPages: true 
   });
 
@@ -327,9 +328,11 @@ export async function generateResidentsPDF(res, students) {
   res.setHeader('Content-Disposition', `attachment; filename="active_residents.pdf"`);
   doc.pipe(res);
 
-  doc.lineWidth(2).strokeColor('#000000').rect(50, 40, 495, 60).stroke();
+  const tW = 741;
+
+  doc.lineWidth(2).strokeColor('#000000').rect(50, 40, tW, 60).stroke();
   doc.fillColor('#000000').fontSize(16).font('Helvetica-Bold')
-     .text('JSS MAIN BUILDING BOYS HOSTEL', 60, 50, { width: 480 });
+     .text('JSS MAIN BUILDING BOYS HOSTEL', 60, 50, { width: tW - 20 });
   doc.fillColor('#000000').fontSize(10).font('Helvetica-Bold')
      .text(`ACTIVE RESIDENTS DIRECTORY`, 60, 70);
   doc.fillColor('#444444').fontSize(8).font('Helvetica')
@@ -338,41 +341,49 @@ export async function generateResidentsPDF(res, students) {
   let currentY = 120;
 
   const drawTableHeader = () => {
-    if (currentY > 730) { doc.addPage(); currentY = 50; }
-    doc.lineWidth(1).strokeColor('#000000').rect(50, currentY, 495, 22).stroke();
+    if (currentY > 500) { doc.addPage(); currentY = 50; }
+    doc.lineWidth(1).strokeColor('#000000').rect(50, currentY, tW, 22).stroke();
     doc.fillColor('#000000').fontSize(7.5).font('Helvetica-Bold');
     doc.text('SL', 55, currentY + 7, { width: 25 });
-    doc.text('ID', 85, currentY + 7, { width: 60 });
-    doc.text('NAME', 145, currentY + 7, { width: 140 });
-    doc.text('ROOM', 295, currentY + 7, { width: 50 });
-    doc.text('BLOCK', 355, currentY + 7, { width: 80 });
-    doc.text('STATUS', 445, currentY + 7, { width: 100 });
+    doc.text('ID', 80, currentY + 7, { width: 55 });
+    doc.text('NAME', 135, currentY + 7, { width: 110 });
+    doc.text('EMAIL', 245, currentY + 7, { width: 140 });
+    doc.text('PHONE', 385, currentY + 7, { width: 70 });
+    doc.text('ROOM', 455, currentY + 7, { width: 40 });
+    doc.text('BLOCK', 495, currentY + 7, { width: 80 });
+    doc.text('JOIN', 575, currentY + 7, { width: 40 });
+    doc.text('LEAVE', 615, currentY + 7, { width: 40 });
+    doc.text('STATUS', 655, currentY + 7, { width: 70 });
     currentY += 22;
   };
 
   drawTableHeader();
 
   students.forEach((s, idx) => {
-    if (currentY > 750) {
+    if (currentY > 520) {
       doc.addPage(); currentY = 50;
       drawTableHeader();
     }
 
     if (idx % 2 === 1) {
-      doc.fillColor('#f5f5f5').rect(50, currentY, 495, 20).fill();
+      doc.fillColor('#f5f5f5').rect(50, currentY, tW, 20).fill();
     }
 
     doc.fillColor('#333333').fontSize(7.5).font('Helvetica');
     doc.text(String(idx + 1), 55, currentY + 6, { width: 25 });
-    doc.font('Helvetica-Bold').text(s.id, 85, currentY + 6, { width: 60 });
-    doc.font('Helvetica').text(s.name, 145, currentY + 6, { width: 140, height: 10, lineBreak: false });
-    doc.text(s.room_number, 295, currentY + 6, { width: 50 });
-    doc.text(s.block, 355, currentY + 6, { width: 80 });
+    doc.font('Helvetica-Bold').text(s.id, 80, currentY + 6, { width: 55 });
+    doc.font('Helvetica').text(s.name, 135, currentY + 6, { width: 110, height: 10, lineBreak: false });
+    doc.text(s.email, 245, currentY + 6, { width: 140, height: 10, lineBreak: false });
+    doc.text(s.phone, 385, currentY + 6, { width: 70 });
+    doc.text(s.room_number, 455, currentY + 6, { width: 40 });
+    doc.text(s.block, 495, currentY + 6, { width: 80, height: 10, lineBreak: false });
+    doc.text(String(s.join_year || '-'), 575, currentY + 6, { width: 40 });
+    doc.text(String(s.leaving_year || '-'), 615, currentY + 6, { width: 40 });
     
     if (s.status === 'Active') {
-      doc.fillColor('#2e7d32').font('Helvetica-Bold').text('Active', 445, currentY + 6, { width: 100 });
+      doc.fillColor('#2e7d32').font('Helvetica-Bold').text('Active', 655, currentY + 6, { width: 70 });
     } else {
-      doc.fillColor('#c62828').font('Helvetica-Bold').text(s.status, 445, currentY + 6, { width: 100 });
+      doc.fillColor('#c62828').font('Helvetica-Bold').text(s.status, 655, currentY + 6, { width: 70 });
     }
 
     currentY += 20;
@@ -383,7 +394,7 @@ export async function generateResidentsPDF(res, students) {
     doc.switchToPage(i);
     doc.fillColor('#888888').fontSize(7).font('Helvetica').text(
       `JSS Main Building Boys Hostel Management System  |  ACTIVE RESIDENTS DIRECTORY  |  Page ${i + 1} of ${pageCount}`,
-      50, 790, { align: 'center', width: 495, lineBreak: false }
+      50, 560, { align: 'center', width: tW, lineBreak: false }
     );
   }
 

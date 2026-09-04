@@ -2471,32 +2471,78 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
 
     // Fetch all votes for this month
     const votes = await AttendanceVote.findAll({
-      where: {
-        date: {
-          [Op.gte]: `${month}-01`,
-          [Op.lte]: `${month}-31`
-        }
-      }
+      where: { date: { [Op.gte]: `${month}-01`, [Op.lte]: `${month}-31` } }
     });
+
+    const verifications = await AttendanceVerification.findAll({
+      where: { date: { [Op.gte]: `${month}-01`, [Op.lte]: `${month}-31` }, is_verified: true }
+    });
+
+    const leaves = await LongLeave.findAll({
+      where: { status: 'Approved', start_date: { [Op.lte]: `${month}-31` }, end_date: { [Op.gte]: `${month}-01` } }
+    });
+
+    const parts = month.split('-');
+    const year = parseInt(parts[0], 10);
+    const mth = parseInt(parts[1], 10);
+    const numDays = new Date(year, mth, 0).getDate();
+    
+    const today = getISTDate();
+    let maxDay = numDays;
+    if (year === today.getUTCFullYear() && (mth - 1) === today.getUTCMonth()) {
+      maxDay = today.getUTCDate();
+    } else if (new Date(year, mth - 1, 1) > today) {
+      maxDay = 0;
+    }
 
     const summaryData = students.map(s => {
       const studentVotes = votes.filter(v => v.student_id === s.id);
+      const studentVerifs = verifications.filter(v => v.student_id === s.id);
+      const studentLeaves = leaves.filter(l => l.student_id === s.id);
       
-      const bPresent = studentVotes.filter(v => v.meal_type === 'breakfast' && v.status === 'Present').length;
-      const bAbsent = studentVotes.filter(v => v.meal_type === 'breakfast' && v.status === 'Absent').length;
-      
-      const dPresent = studentVotes.filter(v => v.meal_type === 'dinner' && v.status === 'Present').length;
-      const dAbsent = studentVotes.filter(v => v.meal_type === 'dinner' && v.status === 'Absent').length;
+      let totalPresent = 0;
+      let totalAbsent = 0;
+      let totalLeave = 0;
+
+      // Only count days since the student was created/joined
+      const joinDateStr = s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : '1970-01-01';
+
+      for (let day = 1; day <= maxDay; day++) {
+        const dateStr = `${year}-${String(mth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        if (dateStr < joinDateStr) continue; // Not a resident yet
+
+        const onLeave = studentLeaves.some(l => dateStr >= l.start_date && dateStr <= l.end_date);
+        
+        if (onLeave) {
+          totalLeave++;
+          continue;
+        }
+
+        const bVote = studentVotes.find(v => v.date === dateStr && v.meal_type === 'breakfast');
+        const dVote = studentVotes.find(v => v.date === dateStr && v.meal_type === 'dinner');
+        
+        const bVerify = studentVerifs.some(v => v.date === dateStr && v.meal_type === 'breakfast');
+        const dVerify = studentVerifs.some(v => v.date === dateStr && v.meal_type === 'dinner');
+        
+        const bIsPresent = bVote?.status === 'Present' && bVerify;
+        const dIsPresent = dVote?.status === 'Present' && dVerify;
+        
+        if (bIsPresent && dIsPresent) {
+           totalPresent++;
+        } else {
+           totalAbsent++;
+        }
+      }
 
       return {
         id: s.id,
         name: s.name,
         room_number: s.room_number,
         block: s.block,
-        bPresent,
-        bAbsent,
-        dPresent,
-        dAbsent
+        totalPresent,
+        totalAbsent,
+        totalLeave
       };
     });
 

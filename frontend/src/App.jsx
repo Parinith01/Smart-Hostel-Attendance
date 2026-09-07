@@ -1183,25 +1183,27 @@ const StudentDashboard = () => {
     const inWin = isInWindow(meal);
     const voteVal = votes[meal];
     return (
-      <div className="meal-card">
-        <div className="meal-card-head">
-          <div className="meal-card-title" style={{color:meal==='breakfast'?'var(--cyan)':'var(--pink)'}}>
+      <div className="premium-meal-card">
+        <div className="pmc-header">
+          <div className={`pmc-title ${meal === 'dinner' ? 'dinner' : ''}`}>
             <span>{icon}</span>{meal.toUpperCase()}
           </div>
-          <span className="meal-time">{start} - {end}</span>
+          <span className="pmc-time">{start} - {end}</span>
         </div>
-        {voteVal==='Absent' ? (
-          <div className="meal-voted-msg meal-voted-absent">MARKED ABSENT</div>
-        ) : voteVal==='Present' ? (
-          <div className="meal-voted-msg meal-voted-present">✓ MARKED PRESENT</div>
-        ) : !inWin ? (
-          <div className="meal-locked-msg">Voting window closed ({start} - {end})</div>
-        ) : (
-          <div className="meal-btn-row">
-            <button className="btn btn-success" onClick={()=>vote(meal,'Present')}>I AM PRESENT</button>
-            <button className="btn btn-danger"  onClick={()=>{ setReturnMeal(meal); setSelectedAbsenceMeal(meal); }}>I AM ABSENT</button>
-          </div>
-        )}
+        <div className="pmc-body">
+          {voteVal==='Absent' ? (
+            <div className="meal-voted-msg meal-voted-absent">MARKED ABSENT</div>
+          ) : voteVal==='Present' ? (
+            <div className="meal-voted-msg meal-voted-present"><CheckCircle size={16}/> MARKED PRESENT</div>
+          ) : !inWin ? (
+            <div className="meal-locked-msg">Voting closed ({start} - {end})</div>
+          ) : (
+            <div className="meal-btn-row">
+              <button className="btn btn-success" onClick={()=>vote(meal,'Present')}>PRESENT</button>
+              <button className="btn btn-danger" onClick={()=>{ setReturnMeal(meal); setSelectedAbsenceMeal(meal); }}>ABSENT</button>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -1209,54 +1211,65 @@ const StudentDashboard = () => {
   return (
     <div className="sp-bg">
       <div className="sp-card animate-fade-in">
-        {/* Header */}
-        <div className="sp-header">
-          <button className="sp-logout-btn" onClick={logout} title="Sign Out" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <LogOut size={16} />
-          </button>
-          <div className="sp-icon-wrap">
-            <Utensils size={28} style={{ color: 'var(--cyan)' }} />
+        {/* Top Header */}
+        <div className="sp-top-header">
+          <div className="sp-brand-row">
+            <div className="sp-icon-small"><Utensils size={20} /></div>
+            <span className="sp-brand-text">JSS HOSTEL HUB</span>
           </div>
-          <h1 className="sp-title">JSS Hostel Hub</h1>
-          <p className="sp-subtitle">Student Portal</p>
-          <p style={{fontSize:'.75rem',color:'var(--text-3)',marginTop:'.4rem',fontFamily:'var(--font-mono)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap'}}>
-            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{profile.name}</span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--green)', fontWeight: 800, background: 'rgba(63, 185, 80, 0.1)', border: '1px solid rgba(63, 185, 80, 0.3)', padding: '1px 5px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-              <CheckCircle size={10} /> VERIFIED RESIDENT
-            </span>
-            <span style={{ color: 'var(--text-3)' }}>·</span>
-            <span>Room {profile.room_number}</span>
-            <span style={{ color: 'var(--text-3)' }}>·</span>
-            <span>{profile.block}</span>
-          </p>
+          <button className="sp-logout-btn" onClick={logout} title="Sign Out">
+            <LogOut size={18} />
+          </button>
+        </div>
+
+        {/* Welcome / Profile */}
+        <div className="sp-profile-section">
+          <div className="sp-hero-titles">
+            <h1 className="sp-hero-title">JSS HOSTEL HUB</h1>
+            <div className="sp-hero-subtitle">STUDENT PORTAL</div>
+          </div>
+          <div className="sp-student-info">
+            <div className="sp-student-name-row">
+              <span className="sp-student-name">{profile.name}</span>
+              <span className="sp-verified-badge">
+                <CheckCircle size={12} /> VERIFIED RESIDENT
+              </span>
+            </div>
+            <div className="sp-room-info">
+              <span>Room {profile.room_number}</span>
+              <span style={{ color: 'var(--text-3)' }}>•</span>
+              <span>{profile.block}</span>
+            </div>
+          </div>
         </div>
 
         {/* Absences Bar */}
-        <div className="sp-absences">
-          <div className="sp-abs-row">
-            <span>Monthly Absences</span>
-            <span className="sp-abs-val">{absUsed} / 8</span>
-          </div>
-          <div className="sp-progress">
-            <div className="sp-progress-fill" style={{width:`${(absUsed/8)*100}%`}}/>
+        <div className="sp-absences-wrap">
+          <div className="sp-absences-card">
+            <div className="sp-abs-row">
+              <span className="sp-abs-label">Monthly Absences</span>
+              <span className="sp-abs-val">{absUsed} / 8</span>
+            </div>
+            <div className="sp-progress">
+              <div className="sp-progress-fill" style={{ width: `${(absUsed / 8) * 100}%` }} />
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="sp-tabs">
+        {/* Navigation Buttons */}
+        <div className="sp-nav-wrap">
           {[
-            { id: 'attendance', label: 'Attendance', icon: <Utensils size={14} style={{ marginRight: '6px' }} /> },
-            { id: 'leave', label: 'Leave', icon: <CalendarDays size={14} style={{ marginRight: '6px' }} /> },
-            { id: 'password', label: 'Security', icon: <Shield size={14} style={{ marginRight: '6px' }} /> }
+            { id: 'attendance', label: 'ATTENDANCE', icon: <Utensils size={18} /> },
+            { id: 'leave', label: 'LEAVE', icon: <CalendarDays size={18} /> },
+            { id: 'password', label: 'SECURITY', icon: <Shield size={18} /> }
           ].map((t) => (
             <button 
               key={t.id} 
-              className={`sp-tab ${tab === t.id ? 'active' : ''}`} 
+              className={`sp-nav-btn ${tab === t.id ? 'active' : ''}`} 
               onClick={() => { setTab(t.id); setError(''); setSuccess(''); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              {t.icon}
-              <span>{t.label.toUpperCase()}</span>
+              <span className="sp-nav-icon">{t.icon}</span>
+              <span>{t.label}</span>
             </button>
           ))}
         </div>
@@ -1388,7 +1401,7 @@ const StudentDashboard = () => {
               </div>
             )}
             {selectedAbsenceMeal ? (
-              <div className="meal-card animate-fade-in">
+              <div className="premium-meal-card animate-fade-in">
                 <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'1rem',color:'var(--cyan)',display:'flex',alignItems:'center',gap:'6px'}}><CalendarDays size={16} /> Schedule Absence for Today</div>
                 {/* Auto-show today's date */}
                 <div style={{background:'rgba(0,229,255,0.06)',border:'1px solid rgba(0,229,255,0.2)',borderRadius:'8px',padding:'.6rem 1rem',marginBottom:'1rem',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -1430,7 +1443,7 @@ const StudentDashboard = () => {
 
           {tab==='leave' && (<>
 
-            <div className="meal-card">
+            <div className="premium-meal-card">
               <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'1rem',color:'var(--pink)',display:'flex',alignItems:'center',gap:'6px'}}><CalendarDays size={16} /> Apply for Long Leave</div>
               <form onSubmit={submitLeave}>
                 <div className="responsive-grid-2">
@@ -1455,7 +1468,7 @@ const StudentDashboard = () => {
             </div>
 
             {leaves.length>0 && (
-              <div className="meal-card">
+              <div className="premium-meal-card">
                 <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'.75rem',color:'var(--text-2)'}}>Leave History</div>
                 {leaves.map(l=>(
                   <div key={l.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'.5rem 0',borderBottom:'1px solid var(--border)'}}>
@@ -1468,7 +1481,7 @@ const StudentDashboard = () => {
           </>)}
 
           {tab==='password' && (<>
-            <div className="meal-card">
+            <div className="premium-meal-card">
               <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'1rem',color:'var(--cyan)'}}>Change Password</div>
               <form onSubmit={changePassword}>
                 <div className="input-group">
@@ -1514,7 +1527,7 @@ const StudentDashboard = () => {
               </form>
             </div>
 
-            <div className="meal-card" style={{ marginTop: '1.5rem', border: '1px solid var(--cyan)' }}>
+            <div className="premium-meal-card" style={{ marginTop: '1.5rem', border: '1px solid var(--cyan)' }}>
               <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'.5rem',color:'var(--cyan)',display:'flex',alignItems:'center',gap:'6px'}}>
                 <Fingerprint size={16} /> Biometric & Device Fingerprint
               </div>

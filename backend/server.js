@@ -2493,7 +2493,13 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Valid month parameter (YYYY-MM) is required.' });
     }
 
-    const endOfMonth = new Date(`${month}-31T23:59:59.999Z`);
+    const parts = month.split('-');
+    const year = parseInt(parts[0], 10);
+    const mth = parseInt(parts[1], 10);
+    const numDays = new Date(year, mth, 0).getDate();
+    const lastDayStr = `${month}-${String(numDays).padStart(2, '0')}`;
+    const endOfMonth = new Date(`${lastDayStr}T23:59:59.999Z`);
+    
     const students = await Student.findAll({
       where: { 
         role: 'student',
@@ -2504,21 +2510,16 @@ app.get('/api/admin/report/monthly', requireAdmin, async (req, res) => {
 
     // Fetch all votes for this month
     const votes = await AttendanceVote.findAll({
-      where: { date: { [Op.gte]: `${month}-01`, [Op.lte]: `${month}-31` } }
+      where: { date: { [Op.gte]: `${month}-01`, [Op.lte]: lastDayStr } }
     });
 
     const verifications = await AttendanceVerification.findAll({
-      where: { date: { [Op.gte]: `${month}-01`, [Op.lte]: `${month}-31` }, is_verified: true }
+      where: { date: { [Op.gte]: `${month}-01`, [Op.lte]: lastDayStr }, is_verified: true }
     });
 
     const leaves = await LongLeave.findAll({
-      where: { status: 'Approved', start_date: { [Op.lte]: `${month}-31` }, end_date: { [Op.gte]: `${month}-01` } }
+      where: { status: 'Approved', start_date: { [Op.lte]: lastDayStr }, end_date: { [Op.gte]: `${month}-01` } }
     });
-
-    const parts = month.split('-');
-    const year = parseInt(parts[0], 10);
-    const mth = parseInt(parts[1], 10);
-    const numDays = new Date(year, mth, 0).getDate();
     
     const today = getISTDate();
     let maxDay = numDays;

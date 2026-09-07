@@ -1868,6 +1868,29 @@ const AdminDashboard = () => {
     catch(e){showMsg('error',e.message);}
   };
 
+  const bulkVerify = async (meal_type) => {
+    const unverifiedIds = roster.filter(s => {
+      if (s.on_leave) return false;
+      const vote = meal_type === 'breakfast' ? s.breakfast_vote : s.dinner_vote;
+      const isVerified = meal_type === 'breakfast' ? s.breakfast_verified : s.dinner_verified;
+      return vote === 'Present' && !isVerified;
+    }).map(s => s.id);
+
+    if (unverifiedIds.length === 0) {
+      return showMsg('success', `All "Present" students for ${meal_type} are already verified!`);
+    }
+
+    if (!window.confirm(`Are you sure you want to verify ${unverifiedIds.length} students for ${meal_type}?`)) return;
+
+    try {
+      await apiPost(`${API_BASE}/admin/verify-attendance-bulk`, { student_ids: unverifiedIds, date: rosterDate, meal_type, verify: true });
+      loadRoster(rosterDate);
+      showMsg('success', `Successfully bulk verified ${unverifiedIds.length} students for ${meal_type}.`);
+    } catch(e) {
+      showMsg('error', e.message);
+    }
+  };
+
   const forceAbsent = async (student_id, meal_type) => {
     if (!window.confirm(`Force mark ${meal_type} absent for this student?`)) return;
     try {
@@ -2495,9 +2518,13 @@ const AdminDashboard = () => {
             </div>
 
             {/* Verified Count Banner */}
-            <div style={{display:'flex',gap:'1rem',padding:'.75rem 1.5rem',background:'rgba(233,30,140,0.04)',borderBottom:'1px solid var(--border)',flexWrap:'wrap'}}>
+            <div style={{display:'flex',gap:'1rem',padding:'.75rem 1.5rem',background:'rgba(233,30,140,0.04)',borderBottom:'1px solid var(--border)',flexWrap:'wrap',alignItems:'center'}}>
               <div className="roster-badge pink" style={{fontWeight:800}}><CheckCircle size={12}/> PHYSICALLY VERIFIED — B: {verifiedB} | D: {verifiedD}</div>
-              <div style={{fontSize:'.72rem',color:'var(--text-3)',alignSelf:'center'}}>Only Present-voted students can be verified below</div>
+              <div style={{flexGrow:1, fontSize:'.72rem',color:'var(--text-3)'}}>Only Present-voted students can be verified below</div>
+              <div style={{display:'flex', gap:'8px'}}>
+                <button className="btn btn-secondary" style={{fontSize:'.7rem', padding:'.3rem .6rem'}} onClick={() => bulkVerify('breakfast')}>Verify All B'Fast</button>
+                <button className="btn btn-secondary" style={{fontSize:'.7rem', padding:'.3rem .6rem'}} onClick={() => bulkVerify('dinner')}>Verify All Dinner</button>
+              </div>
             </div>
 
             <div className="cyber-table-wrap">

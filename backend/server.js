@@ -2235,6 +2235,39 @@ app.post('/api/admin/verify-attendance', requireAdmin, async (req, res) => {
   }
 });
 
+app.post('/api/admin/verify-attendance-bulk', requireAdmin, async (req, res) => {
+  try {
+    const { student_ids, date, meal_type, verify } = req.body;
+    if (!student_ids || !Array.isArray(student_ids) || !date || !meal_type)
+      return res.status(400).json({ error: 'student_ids (array), date, meal_type required.' });
+
+    if (verify) {
+      const records = student_ids.map(id => ({
+        student_id: id,
+        date,
+        meal_type,
+        verified_by: req.user.id,
+        is_verified: true
+      }));
+      await AttendanceVerification.bulkCreate(records, {
+        updateOnDuplicate: ['verified_by', 'is_verified', 'updatedAt']
+      });
+    } else {
+      await AttendanceVerification.destroy({
+        where: {
+          student_id: { [Op.in]: student_ids },
+          date,
+          meal_type
+        }
+      });
+    }
+    return res.json({ success: true, count: student_ids.length });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Server error.' });
+  }
+});
+
 // Admin overwrite vote
 app.post('/api/admin/overwrite-vote', requireAdmin, async (req, res) => {
   try {

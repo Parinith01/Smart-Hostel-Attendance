@@ -539,7 +539,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="responsive-grid-2">
             <div className="input-group">
               <label className="input-label">Email ID</label>
               <div style={{ position: 'relative' }}>
@@ -576,7 +576,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="responsive-grid-2">
             <div className="input-group">
               <label className="input-label">Room Number</label>
               <input
@@ -609,7 +609,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="responsive-grid-2">
             <div className="input-group">
               <label className="input-label">Joining Year</label>
               <input
@@ -1433,7 +1433,7 @@ const StudentDashboard = () => {
             <div className="meal-card">
               <div style={{fontWeight:700,fontSize:'.85rem',marginBottom:'1rem',color:'var(--pink)',display:'flex',alignItems:'center',gap:'6px'}}><CalendarDays size={16} /> Apply for Long Leave</div>
               <form onSubmit={submitLeave}>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'.75rem'}}>
+                <div className="responsive-grid-2">
                   <div className="input-group">
                     <label className="input-label">Start Date</label>
                     <input type="date" className="input-field" min={new Date().toISOString().split('T')[0]} value={leaveStart} onChange={e=>setLeaveStart(e.target.value)} required/>
@@ -2204,7 +2204,7 @@ const AdminDashboard = () => {
             <div className="panel-title" style={{ color: 'var(--cyan)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Award size={16} /> JSS HOSTEL TOKEN GENERATION CENTER
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="responsive-grid-2" style={{ gap: '1.5rem' }}>
               <div>
                 <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Roster Verification Status</h4>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', marginBottom: '0.75rem' }}>
@@ -2424,7 +2424,7 @@ const AdminDashboard = () => {
                       Verified Resident: <span style={{ color: 'var(--cyan)' }}>{scanResultModal.studentName}</span>
                     </p>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '280px', width: '100%', marginBottom: '1.5rem' }}>
+                    <div className="responsive-grid-2" style={{ maxWidth: '280px', width: '100%', marginBottom: '1.5rem' }}>
                       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.4rem 0.6rem' }}>
                         <div style={{ fontSize: '0.58rem', color: 'var(--text-3)' }}>ROOM / BLOCK</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-2)', fontWeight: 800 }}>{scanResultModal.roomNumber} ({scanResultModal.block})</div>
@@ -3075,6 +3075,7 @@ const CreatorProfile = ({ onClose }) => {
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
           position: 'relative',
           display: 'flex',
+          flexWrap: 'wrap',
           gap: '2.5rem',
           alignItems: 'center',
           animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)'

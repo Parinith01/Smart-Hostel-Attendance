@@ -1073,8 +1073,11 @@ const StudentDashboard = () => {
   const [showConPass, setShowConPass] = useState(false);
   const [selectedAbsenceMeal, setSelectedAbsenceMeal] = useState(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editName, setEditName] = useState('');
   const [editRoom, setEditRoom] = useState('');
   const [editBlock, setEditBlock] = useState('');
+  const [editJoinYear, setEditJoinYear] = useState('');
+  const [editLeavingYear, setEditLeavingYear] = useState('');
   const navigate = useNavigate();
 
   const token = () => sessionStorage.getItem('hms_token');
@@ -1160,7 +1163,16 @@ const StudentDashboard = () => {
   const submitProfileUpdate = async (e) => {
     e.preventDefault(); setError(''); setSuccess('');
     try {
-      await apiFetch(`${API_BASE}/student/profile`, {method: 'PUT', body: JSON.stringify({ room_number: editRoom, block: editBlock })});
+      await apiFetch(`${API_BASE}/student/profile`, {
+        method: 'PUT', 
+        body: JSON.stringify({ 
+          name: editName,
+          room_number: editRoom, 
+          block: editBlock,
+          join_year: editJoinYear,
+          leaving_year: editLeavingYear || null
+        })
+      });
       setSuccess('Profile updated successfully.');
       setShowEditProfile(false);
       loadAll();
@@ -1244,8 +1256,11 @@ const StudentDashboard = () => {
               {!showEditProfile && (
                 <button 
                   onClick={() => {
+                    setEditName(profile.name);
                     setEditRoom(profile.room_number);
                     setEditBlock(profile.block);
+                    setEditJoinYear(profile.join_year);
+                    setEditLeavingYear(profile.leaving_year || '');
                     setShowEditProfile(true);
                   }}
                   style={{background:'none',border:'none',color:'var(--cyan)',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px'}}
@@ -1259,6 +1274,10 @@ const StudentDashboard = () => {
           {showEditProfile ? (
             <div className="premium-meal-card" style={{padding:'1rem'}}>
               <form onSubmit={submitProfileUpdate} style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+                <div className="input-group" style={{marginBottom:0}}>
+                  <label className="input-label">Full Name</label>
+                  <input type="text" className="input-field" value={editName} onChange={e=>setEditName(e.target.value)} required />
+                </div>
                 <div className="responsive-grid-2">
                   <div className="input-group" style={{marginBottom:0}}>
                     <label className="input-label">Room Number</label>
@@ -1266,10 +1285,26 @@ const StudentDashboard = () => {
                   </div>
                   <div className="input-group" style={{marginBottom:0}}>
                     <label className="input-label">Block/Building</label>
-                    <input type="text" className="input-field" value={editBlock} onChange={e=>setEditBlock(e.target.value)} required />
+                    <select className="input-field" value={editBlock} onChange={e=>setEditBlock(e.target.value)} required style={{ appearance: 'auto', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-primary)' }}>
+                      <option value="" disabled style={{ color: '#000' }}>Select Block</option>
+                      <option value="Old building" style={{ color: '#000' }}>Old building</option>
+                      <option value="1st floor new building" style={{ color: '#000' }}>1st floor new building</option>
+                      <option value="2nd floor new building" style={{ color: '#000' }}>2nd floor new building</option>
+                      <option value="3rd floor new building" style={{ color: '#000' }}>3rd floor new building</option>
+                    </select>
                   </div>
                 </div>
-                <div style={{display:'flex',gap:'.75rem'}}>
+                <div className="responsive-grid-2">
+                  <div className="input-group" style={{marginBottom:0}}>
+                    <label className="input-label">Starting Year</label>
+                    <input type="number" className="input-field" value={editJoinYear} onChange={e=>setEditJoinYear(e.target.value)} required min="2000" max="2100" />
+                  </div>
+                  <div className="input-group" style={{marginBottom:0}}>
+                    <label className="input-label">Leaving Year (Optional)</label>
+                    <input type="number" className="input-field" value={editLeavingYear} onChange={e=>setEditLeavingYear(e.target.value)} min="2000" max="2100" />
+                  </div>
+                </div>
+                <div style={{display:'flex',gap:'.75rem',marginTop:'.5rem'}}>
                   <button type="submit" className="btn btn-success" style={{flex:1}}>Save</button>
                   <button type="button" className="btn btn-secondary" style={{flex:1}} onClick={()=>setShowEditProfile(false)}>Cancel</button>
                 </div>

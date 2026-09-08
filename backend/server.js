@@ -1547,15 +1547,18 @@ app.put('/api/student/change-password', authenticateToken, async (req, res) => {
 // ==========================================
 app.put('/api/student/profile', authenticateToken, async (req, res) => {
   try {
-    const { room_number, block } = req.body;
-    if (!room_number || !block) {
-      return res.status(400).json({ error: 'Room number and block are required.' });
+    const { name, room_number, block, join_year, leaving_year } = req.body;
+    if (!name || !room_number || !block || !join_year) {
+      return res.status(400).json({ error: 'Name, Room number, block, and starting year are required.' });
     }
     const student = await Student.findByPk(req.user.id);
     if (!student) return res.status(404).json({ error: 'Student not found.' });
 
+    student.name = name;
     student.room_number = room_number;
     student.block = block;
+    student.join_year = join_year;
+    student.leaving_year = leaving_year || null;
     await student.save();
     return res.json({ success: true, message: 'Profile updated successfully.', profile: student });
   } catch (err) {

@@ -1542,6 +1542,28 @@ app.put('/api/student/change-password', authenticateToken, async (req, res) => {
   }
 });
 
+// ==========================================
+// STUDENT – UPDATE PROFILE
+// ==========================================
+app.put('/api/student/profile', authenticateToken, async (req, res) => {
+  try {
+    const { room_number, block } = req.body;
+    if (!room_number || !block) {
+      return res.status(400).json({ error: 'Room number and block are required.' });
+    }
+    const student = await Student.findByPk(req.user.id);
+    if (!student) return res.status(404).json({ error: 'Student not found.' });
+
+    student.room_number = room_number;
+    student.block = block;
+    await student.save();
+    return res.json({ success: true, message: 'Profile updated successfully.', profile: student });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Server error updating profile.' });
+  }
+});
+
 // Get student's active token (for today or tomorrow breakfast)
 app.get('/api/student/my-token', authenticateToken, async (req, res) => {
   try {

@@ -4,7 +4,7 @@ import {
   User, Lock, Phone, Mail, Home, Shield, LogOut, CheckCircle, XCircle, 
   AlertTriangle, RefreshCw, Search, Filter, Calendar, Users, 
   CalendarDays, Award, Clock, FileSpreadsheet, FileText, ShieldAlert, Key, Utensils,
-  Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff, Fingerprint, Trash2
+  Eye, EyeOff, Sun, Moon, Upload, Camera, CameraOff, Fingerprint, Trash2, Edit2
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
@@ -1072,6 +1072,9 @@ const StudentDashboard = () => {
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConPass, setShowConPass] = useState(false);
   const [selectedAbsenceMeal, setSelectedAbsenceMeal] = useState(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editRoom, setEditRoom] = useState('');
+  const [editBlock, setEditBlock] = useState('');
   const navigate = useNavigate();
 
   const token = () => sessionStorage.getItem('hms_token');
@@ -1154,6 +1157,16 @@ const StudentDashboard = () => {
     } catch(e){ setError(e.message); }
   };
 
+  const submitProfileUpdate = async (e) => {
+    e.preventDefault(); setError(''); setSuccess('');
+    try {
+      await apiFetch(`${API_BASE}/student/profile`, {method: 'PUT', body: JSON.stringify({ room_number: editRoom, block: editBlock })});
+      setSuccess('Profile updated successfully.');
+      setShowEditProfile(false);
+      loadAll();
+    } catch (e) { setError(e.message); }
+  };
+
   const changePassword = async (e) => {
     e.preventDefault(); setError(''); setSuccess('');
     try {
@@ -1226,21 +1239,57 @@ const StudentDashboard = () => {
         <div className="sp-profile-section">
           <div className="sp-hero-titles">
             <h1 className="sp-hero-title">JSS HOSTEL HUB</h1>
-            <div className="sp-hero-subtitle">STUDENT PORTAL</div>
-          </div>
-          <div className="sp-student-info">
-            <div className="sp-student-name-row">
-              <span className="sp-student-name">{profile.name}</span>
-              <span className="sp-verified-badge">
-                <CheckCircle size={12} /> VERIFIED RESIDENT
-              </span>
+            <div className="sp-hero-subtitle" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              STUDENT PORTAL
+              {!showEditProfile && (
+                <button 
+                  onClick={() => {
+                    setEditRoom(profile.room_number);
+                    setEditBlock(profile.block);
+                    setShowEditProfile(true);
+                  }}
+                  style={{background:'none',border:'none',color:'var(--cyan)',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px'}}
+                >
+                  <Edit2 size={12}/> Edit Profile
+                </button>
+              )}
             </div>
-            <div className="sp-room-info">
-              <span>Room {profile.room_number}</span>
-              <span style={{ color: 'var(--text-3)' }}>•</span>
-              <span>{profile.block}</span>
-            </div>
           </div>
+          
+          {showEditProfile ? (
+            <div className="premium-meal-card" style={{padding:'1rem'}}>
+              <form onSubmit={submitProfileUpdate} style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+                <div className="responsive-grid-2">
+                  <div className="input-group" style={{marginBottom:0}}>
+                    <label className="input-label">Room Number</label>
+                    <input type="text" className="input-field" value={editRoom} onChange={e=>setEditRoom(e.target.value)} required />
+                  </div>
+                  <div className="input-group" style={{marginBottom:0}}>
+                    <label className="input-label">Block/Building</label>
+                    <input type="text" className="input-field" value={editBlock} onChange={e=>setEditBlock(e.target.value)} required />
+                  </div>
+                </div>
+                <div style={{display:'flex',gap:'.75rem'}}>
+                  <button type="submit" className="btn btn-success" style={{flex:1}}>Save</button>
+                  <button type="button" className="btn btn-secondary" style={{flex:1}} onClick={()=>setShowEditProfile(false)}>Cancel</button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="sp-student-info">
+              <div className="sp-student-name-row">
+                <span className="sp-student-name">{profile.name}</span>
+                <span className="sp-verified-badge">
+                  <CheckCircle size={12} /> VERIFIED RESIDENT
+                </span>
+              </div>
+              <div className="sp-room-info">
+                <span>Room {profile.room_number}</span>
+                <span style={{ color: 'var(--text-3)' }}>•</span>
+                <span>{profile.block}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Absences Bar */}

@@ -8,7 +8,13 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:Parinith%401947@db.rbdbzsivydeeujorxzba.supabase.co:5432/postgres';
+let databaseUrl = process.env.DATABASE_URL;
+
+// On Vercel / serverless (IPv4 only), direct db.***.supabase.co fails with ENOTFOUND because Supabase direct is IPv6.
+// We must use Supabase IPv4 Pooler (aws-0-ap-southeast-2.pooler.supabase.com:5432 or 6543).
+if (process.env.VERCEL || !databaseUrl || databaseUrl.includes('db.rbdbzsivydeeujorxzba.supabase.co')) {
+  databaseUrl = 'postgres://postgres.rbdbzsivydeeujorxzba:Parinith%401947@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres';
+}
 
 console.log('Connecting to PostgreSQL database...');
 const sequelize = new Sequelize(databaseUrl, {
@@ -16,7 +22,13 @@ const sequelize = new Sequelize(databaseUrl, {
   dialectModule: pg,
   protocol: 'postgres',
   dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
-  logging: false
+  logging: false,
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 10000,
+    idle: 5000
+  }
 });
 
 // ── Existing Models ──────────────────────────────────────────

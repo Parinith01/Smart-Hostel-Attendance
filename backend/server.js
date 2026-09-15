@@ -1313,6 +1313,165 @@ app.get('/api/admin/students', requireAdmin, async (req, res) => {
   }
 });
 
+// Download Sample Template for Bulk Student Import (.xlsx)
+app.get('/api/admin/students/sample-template', requireAdmin, (req, res) => {
+  try {
+    const sampleData = [
+      {
+        'Student Name': 'Rahul Sharma',
+        'Phone Number': '9876543210',
+        'Email': 'rahul.sharma@gmail.com',
+        'Room Number': '101',
+        'Block': 'A-Block',
+        'Join Year': 2024,
+        'Leaving Year': 2027,
+        'Password': 'Hostel@123'
+      },
+      {
+        'Student Name': 'Ankit Verma',
+        'Phone Number': '9844112233',
+        'Email': 'ankit.verma@gmail.com',
+        'Room Number': '102',
+        'Block': 'B-Block',
+        'Join Year': 2024,
+        'Leaving Year': 2027,
+        'Password': 'Hostel@123'
+      }
+    ];
+
+    const ws = xlsx.utils.json_to_sheet(sampleData);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, 'Students_Template');
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="Students_Import_Template.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    return res.send(buffer);
+  } catch (err) {
+    console.error('Failed to generate template:', err);
+    return res.status(500).json({ error: 'Failed to generate template.' });
+  }
+});
+
+// Bulk Import Students via Excel (.xlsx, .xls) or CSV (.csv)
+app.post('/api/admin/students/bulk-import', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded. Please choose an Excel or CSV file.' });
+    }
+
+    const buffer = req.file.buffer;
+    const filename = req.file.originalname.toLowerCase();
+    let rows = [];
+
+    if (filename.endsWith('.csv') || filename.endsWith('.txt')) {
+      const csvStr = buffer.toString('utf-8');
+      const workbook = xlsx.read(csvStr, { type: 'string' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      rows = xlsx.utils.sheet_to_json(firstSheet, { defval: '' });
+    } else if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
+      const workbook = xlsx.read(buffer, { type: 'buffer' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      rows = xlsx.utils.sheet_to_json(firstSheet, { defval: '' });
+    } else {
+      return res.status(400).json({ error: 'Unsupported file format. Please upload .xlsx, .xls, or .csv' });
+    }
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ error: 'The uploaded file is empty or contains no readable rows.' });
+    }
+
+    let importedCount = 0;
+    let updatedCount = 0;
+    const errors = [];
+    const createdStudents = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const rowNum = i + 2; // header is row 1
+
+      // Smart column matching
+      const name = String(r['Student Name'] || r['Name'] || r['Full Name'] || r['student_name'] || r['name'] || '').trim();
+      const phone = String(r['Phone Number'] || r['Phone'] || r['Mobile'] || r['Mobile Number'] || r['phone'] || r['contact'] || '').replace(/[^0-9]/g, '');
+      const room_number = String(r['Room Number'] || r['Room'] || r['Room No'] || r['room_number'] || r['room'] || '101').trim();
+      const block = String(r['Block'] || r['Hostel Block'] || r['block'] || 'A-Block').trim();
+      const rawEmail = String(r['Email'] || r['Email ID'] || r['email'] || '').trim().toLowerCase();
+      const join_year = parseInt(r['Join Year'] || r['Joining Year'] || r['join_year'] || 2024) || 2024;
+      const leaving_year = parseInt(r['Leaving Year'] || r['leaving_year'] || (join_year + 3)) || (join_year + 3);
+      const rawPassword = String(r['Password'] || r['password'] || 'Hostel@123').trim();
+      const customId = String(r['Student ID'] || r['User ID'] || r['ID'] || r['id'] || '').trim().toLowerCase();
+
+      if (!name) {
+        errors.push(`Row ${rowNum}: Missing Student Name.`);
+        continue;
+      }
+
+      if (!phone || phone.length < 4) {
+        errors.push(`Row ${rowNum} (${name}): Invalid or missing phone number.`);
+        continue;
+      }
+
+      // Generate User ID
+      let userId = customId;
+      if (!userId) {
+        const cleanName = name.replace(/[^a-zA-Z]/g, '').toLowerCase();
+        const namePart = cleanName.substring(0, 4).padEnd(4, 'x');
+        const phonePart = phone.slice(-4);
+        userId = `${namePart}${phonePart}`;
+      }
+
+      // Generate Email if missing
+      const email = rawEmail || `${userId}@hostelhub.internal`;
+
+      // Password Hash
+      const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+      try {
+        const existingStudent = await Student.findByPk(userId);
+        await Student.upsert({
+          id: userId,
+          name,
+          email,
+          phone,
+          room_number,
+          block,
+          join_year,
+          leaving_year,
+          password: hashedPassword,
+          role: 'student',
+          status: 'Active',
+          suspicious_score: 0,
+          registration_ip: '127.0.0.1',
+          device_fingerprint: 'admin-bulk-import'
+        });
+
+        if (existingStudent) {
+          updatedCount++;
+        } else {
+          importedCount++;
+        }
+        createdStudents.push({ id: userId, name, email, phone, room_number, block });
+      } catch (err) {
+        errors.push(`Row ${rowNum} (${name}): ${err.message}`);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Bulk import completed: ${importedCount} added, ${updatedCount} updated.`,
+      importedCount,
+      updatedCount,
+      totalRows: rows.length,
+      errors,
+      students: createdStudents
+    });
+
+  } catch (err) {
+    console.error('Bulk student import failed:', err);
+    return res.status(500).json({ error: 'Server error during bulk student import.' });
+  }
+});
+
 // Update Student Status (Active, Left Hostel, Suspended, Completed)
 app.patch('/api/admin/student/:id/status', requireAdmin, async (req, res) => {
   try {

@@ -1701,7 +1701,49 @@ const AdminDashboard = () => {
   const [scanResultModal, setScanResultModal] = useState({ show: false, granted: false, reason: '', studentName: '', roomNumber: '', block: '', tokenNumber: '', meal: '', redeemedAt: '' });
   const [cameraActive, setCameraActive] = useState(false);
   const [html5QrScanner, setHtml5QrScanner] = useState(null);
+  const [isUploadingStudents, setIsUploadingStudents] = useState(false);
+  const [studentImportSummary, setStudentImportSummary] = useState(null);
   const navigate = useNavigate();
+
+  const downloadStudentTemplate = async () => {
+    await downloadPDF(`${API_BASE}/admin/students/sample-template`, 'Students_Import_Template.xlsx');
+  };
+
+  const handleBulkStudentFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsUploadingStudents(true);
+    setStudentImportSummary(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/students/bulk-import`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${hmsToken()}`
+        },
+        credentials: 'include',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to import students.');
+      }
+
+      setStudentImportSummary(data);
+      showMsg('success', data.message || `Successfully imported ${data.importedCount} student(s)!`);
+      loadAll();
+    } catch (err) {
+      showMsg('error', err.message);
+    } finally {
+      setIsUploadingStudents(false);
+      e.target.value = '';
+    }
+  };
 
   const hmsToken = () => sessionStorage.getItem('hms_token');
   const ah = () => { const h={'Content-Type':'application/json'}; if(hmsToken()) h['Authorization']=`Bearer ${hmsToken()}`; return h; };
@@ -2951,7 +2993,78 @@ const AdminDashboard = () => {
 
           {/* Student Directory - Active Residents Only */}
           <div className="panel-card" style={{marginBottom:'1.5rem', border: '1px solid rgba(0, 229, 255, 0.25)'}}>
-            <div className="panel-title" style={{color:'var(--cyan)'}}>ACTIVE RESIDENTS DIRECTORY</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '1rem' }}>
+              <div className="panel-title" style={{color:'var(--cyan)', margin: 0}}>ACTIVE RESIDENTS DIRECTORY ({activeResidents.length})</div>
+              
+              {/* Bulk Import Action Buttons */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ fontSize: '.78rem', background: 'rgba(0, 229, 255, 0.12)', border: '1px solid rgba(0, 229, 255, 0.35)', color: 'var(--cyan)' }} 
+                  onClick={downloadStudentTemplate}
+                  title="Download pre-formatted Excel template for student bulk import"
+                >
+                  📄 Download Excel Template
+                </button>
+                
+                <label 
+                  className="btn btn-primary" 
+                  style={{ 
+                    fontSize: '.78rem', 
+                    cursor: isUploadingStudents ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    margin: 0,
+                    opacity: isUploadingStudents ? 0.7 : 1
+                  }}
+                  title="Upload Excel or CSV file to add multiple students at once"
+                >
+                  <Upload size={14} />
+                  {isUploadingStudents ? 'Importing Students...' : '📥 Bulk Import Students (.xlsx / .csv)'}
+                  <input 
+                    type="file" 
+                    accept=".xlsx,.xls,.csv" 
+                    style={{ display: 'none' }} 
+                    disabled={isUploadingStudents}
+                    onChange={handleBulkStudentFile}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Bulk Import Summary Notification */}
+            {studentImportSummary && (
+              <div style={{
+                background: 'rgba(0, 230, 118, 0.1)',
+                border: '1px solid rgba(0, 230, 118, 0.3)',
+                borderRadius: '8px',
+                padding: '0.85rem 1rem',
+                marginBottom: '1rem',
+                fontSize: '0.85rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, color: 'var(--green)' }}>
+                  <span>✓ {studentImportSummary.message}</span>
+                  <button 
+                    onClick={() => setStudentImportSummary(null)} 
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '1rem' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                {studentImportSummary.errors && studentImportSummary.errors.length > 0 && (
+                  <div style={{ marginTop: '0.5rem', color: 'var(--orange)', fontSize: '0.78rem' }}>
+                    <div style={{ fontWeight: 600 }}>Warnings/Skipped items:</div>
+                    <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                      {studentImportSummary.errors.map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div style={{display:'flex',gap:'.75rem',marginBottom:'1rem',flexWrap:'wrap'}}>
               <input className="input-field" style={{flex:1,minWidth:'180px'}} placeholder="Search active name..." value={search} onChange={e=>{setSearch(e.target.value);}}/>
               <select className="input-field" style={{width:'160px'}} value={statusFilter} onChange={e=>{setStatusFilter(e.target.value);}}>

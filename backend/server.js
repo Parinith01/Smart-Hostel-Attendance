@@ -35,6 +35,7 @@ import { generateRegistrationOptions, verifyRegistrationResponse, generateAuthen
 dotenv.config();
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
 const PORT = process.env.PORT || 5000;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hostel_hub_super_secret_jwt_key_2026';
@@ -2115,9 +2116,6 @@ async function extractPdfText(buffer) {
   }
   throw new Error('No valid PDF parsing interface found in the loaded pdf-parse module.');
 }
-
-// Configure memory storage for multer file upload
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Bulk Upload Allowed Emails (XLSX, XLS, CSV, TXT, PDF)
 app.post('/api/admin/allowed-emails/upload', requireAdmin, upload.single('file'), async (req, res) => {

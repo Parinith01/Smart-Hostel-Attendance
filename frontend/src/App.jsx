@@ -1235,6 +1235,116 @@ const StudentDashboard = () => {
 
   return (
     <div className="sp-bg">
+      {/* Mandatory Password Change Overlay */}
+      {profile?.must_change_password && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(5, 7, 15, 0.92)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div className="panel-card" style={{
+            maxWidth: '440px',
+            width: '100%',
+            border: '1px solid rgba(0, 229, 255, 0.4)',
+            boxShadow: '0 0 35px rgba(0, 229, 255, 0.25)',
+            borderRadius: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
+              <ShieldAlert size={26} color="var(--orange)" />
+              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--cyan)', letterSpacing: '0.05em' }}>
+                SECURITY UPDATE REQUIRED
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '1.25rem', lineHeight: '1.5' }}>
+              You are currently using a temporary default password. For your account security, please set your new personal password before accessing the dashboard.
+            </p>
+
+            {error && <Alert type="error">{error}</Alert>}
+            {success && <Alert type="success">{success}</Alert>}
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setError('');
+              setSuccess('');
+              try {
+                await apiFetch(`${API_BASE}/student/change-password`, {
+                  method: 'PUT',
+                  body: JSON.stringify({ currentPassword: cpCur, newPassword: cpNew, confirmPassword: cpCon })
+                });
+                setSuccess('Password updated successfully!');
+                setCpCur('');
+                setCpNew('');
+                setCpCon('');
+                loadAll();
+              } catch (err) {
+                setError(err.message);
+              }
+            }}>
+              <div className="input-group">
+                <label className="input-label">Current / Temporary Password</label>
+                <input 
+                  type="password" 
+                  className="input-field" 
+                  value={cpCur} 
+                  onChange={e => setCpCur(e.target.value.substring(0, 12))} 
+                  placeholder="Enter current password" 
+                  maxLength={12}
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">New Password (max 12 chars)</label>
+                <input 
+                  type="password" 
+                  className="input-field" 
+                  value={cpNew} 
+                  onChange={e => setCpNew(e.target.value.substring(0, 12))} 
+                  placeholder="Enter new password" 
+                  maxLength={12}
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Confirm New Password</label>
+                <input 
+                  type="password" 
+                  className="input-field" 
+                  value={cpCon} 
+                  onChange={e => setCpCon(e.target.value.substring(0, 12))} 
+                  placeholder="Re-enter new password" 
+                  maxLength={12}
+                  required
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', fontWeight: 700 }}>
+                Update Password & Continue
+              </button>
+
+              <button 
+                type="button" 
+                onClick={logout} 
+                style={{ width: '100%', marginTop: '0.75rem', background: 'transparent', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '0.8rem' }}
+              >
+                Sign Out
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="sp-card animate-fade-in">
         {/* Top Header */}
         <div className="sp-top-header">

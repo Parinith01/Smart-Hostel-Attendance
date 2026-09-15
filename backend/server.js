@@ -628,7 +628,8 @@ app.post('/api/auth/login', async (req, res) => {
         email: student.email,
         room_number: student.room_number,
         block: student.block,
-        role: student.role
+        role: student.role,
+        must_change_password: student.must_change_password || false
       }
     });
 
@@ -1051,7 +1052,8 @@ app.get('/api/student/dashboard', authenticateToken, async (req, res) => {
         room_number: student.room_number,
         block: student.block,
         email: student.email,
-        status: student.status
+        status: student.status,
+        must_change_password: student.must_change_password || false
       },
       votes: {
         breakfast: breakfastVote,
@@ -1441,6 +1443,7 @@ app.post('/api/admin/students/bulk-import', requireAdmin, upload.single('file'),
           password: hashedPassword,
           role: 'student',
           status: 'Active',
+          must_change_password: true,
           suspicious_score: 0,
           registration_ip: '127.0.0.1',
           device_fingerprint: 'admin-bulk-import'
@@ -1708,6 +1711,7 @@ app.put('/api/student/change-password', authenticateToken, async (req, res) => {
     if (!match) return res.status(401).json({ error: 'Current password is incorrect.' });
 
     student.password = await bcrypt.hash(newPassword, 10);
+    student.must_change_password = false;
     await student.save();
     return res.json({ success: true, message: 'Password changed successfully.' });
   } catch (err) {

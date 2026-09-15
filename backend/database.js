@@ -49,7 +49,8 @@ const Student = sequelize.define('Student', {
   device_fingerprint: { type: DataTypes.STRING(255), allowNull: true },
   webauthn_current_challenge: { type: DataTypes.STRING(100), allowNull: true },
   joining_date: { type: DataTypes.DATE, defaultValue: Sequelize.NOW },
-  leaving_date: { type: DataTypes.DATE, allowNull: true }
+  leaving_date: { type: DataTypes.DATE, allowNull: true },
+  must_change_password: { type: DataTypes.BOOLEAN, defaultValue: false }
 }, { timestamps: true });
 
 const OTPModel = sequelize.define('OTP', {

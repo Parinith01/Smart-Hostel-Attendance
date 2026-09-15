@@ -140,13 +140,11 @@ let isSynced = false;
 async function ensureDbSynced() {
   if (isSynced) return;
   try {
+    await sequelize.sync();
+    await seedAdminAccount();
+    await seedSystemConfig();
     if (!process.env.VERCEL) {
-      await sequelize.sync();
-      await seedAdminAccount();
-      await seedSystemConfig();
       scheduleAutoExpiry();
-    } else {
-      console.log('Database sync bypassed on Vercel (production database is already synchronized).');
     }
     isSynced = true;
   } catch (err) {

@@ -8,29 +8,16 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl || databaseUrl.includes('db.rbdbzsivydeeujorxzba.supabase.co')) {
-  databaseUrl = 'postgres://postgres.rbdbzsivydeeujorxzba:Parinith%401947@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres';
-}
-let sequelize;
+let databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:Parinith%401947@db.rbdbzsivydeeujorxzba.supabase.co:5432/postgres';
 
-if (databaseUrl && (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))) {
-  console.log('Connecting to PostgreSQL database...');
-  sequelize = new Sequelize(databaseUrl, {
-    dialect: 'postgres',
-    dialectModule: pg,
-    protocol: 'postgres',
-    dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
-    logging: false
-  });
-} else {
-  sequelize = new Sequelize(databaseUrl, {
-    dialect: 'postgres',
-    dialectModule: pg,
-    dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
-    logging: false
-  });
-}
+console.log('Connecting to PostgreSQL database...');
+const sequelize = new Sequelize(databaseUrl, {
+  dialect: 'postgres',
+  dialectModule: pg,
+  protocol: 'postgres',
+  dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+  logging: false
+});
 
 // ── Existing Models ──────────────────────────────────────────
 

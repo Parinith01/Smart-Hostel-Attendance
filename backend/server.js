@@ -648,8 +648,24 @@ function getWebAuthnConfig(req) {
 }
 
 // 1. Get Registration Options
-app.get('/api/ping', (req, res) => {
-  res.json({ pong: 'version-with-uint8array-fix-v3' });
+app.get('/api/ping', async (req, res) => {
+  let dbStatus = 'unknown';
+  let dbError = null;
+  try {
+    await sequelize.authenticate();
+    dbStatus = 'connected';
+  } catch (e) {
+    dbStatus = 'error';
+    dbError = e.message;
+  }
+  res.json({
+    pong: 'v4-db-check',
+    dbStatus,
+    dbError,
+    dbUrlConfigured: Boolean(process.env.DATABASE_URL),
+    nodeEnv: process.env.NODE_ENV,
+    isVercel: Boolean(process.env.VERCEL)
+  });
 });
 
 app.post('/api/auth/webauthn/register-options', async (req, res) => {

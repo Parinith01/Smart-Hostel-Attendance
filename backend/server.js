@@ -221,7 +221,7 @@ async function seedAdminAccount() {
       await Student.create({
         id: 'jss#2026',
         name: 'System Admin',
-        email: 'parinithmswamy15@gmail.com',
+        email: 'jssmainhostel@gmail.com',
         phone: '9999999999',
         room_number: 'A-001',
         block: 'Admin Block',

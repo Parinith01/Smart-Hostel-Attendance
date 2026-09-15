@@ -1068,6 +1068,9 @@ const StudentDashboard = () => {
   const [cpCur, setCpCur] = useState('');
   const [cpNew, setCpNew] = useState('');
   const [cpCon, setCpCon] = useState('');
+  const [cpOtp, setCpOtp] = useState('');
+  const [setupOtpCooldown, setSetupOtpCooldown] = useState(60);
+  const [resendingOtp, setResendingOtp] = useState(false);
   const [showCurPass, setShowCurPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConPass, setShowConPass] = useState(false);
@@ -1091,6 +1094,30 @@ const StudentDashboard = () => {
     const d = await res.json();
     if(!res.ok) throw new Error(d.error||'Error');
     return d;
+  };
+
+  useEffect(() => {
+    let timer;
+    if (setupOtpCooldown > 0) {
+      timer = setTimeout(() => setSetupOtpCooldown(c => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [setupOtpCooldown]);
+
+  const handleResendSetupOtp = async () => {
+    if (setupOtpCooldown > 0 || resendingOtp) return;
+    setError('');
+    setSuccess('');
+    setResendingOtp(true);
+    try {
+      const res = await apiFetch(`${API_BASE}/student/send-setup-otp`, { method: 'POST' });
+      setSuccess(res.message || 'Verification OTP code resent to your email.');
+      setSetupOtpCooldown(60);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setResendingOtp(false);
+    }
   };
 
   const isInWindow = (meal) => {
@@ -1182,8 +1209,8 @@ const StudentDashboard = () => {
   const changePassword = async (e) => {
     e.preventDefault(); setError(''); setSuccess('');
     try {
-      await apiFetch(`${API_BASE}/student/change-password`,{method:'PUT',body:JSON.stringify({currentPassword:cpCur,newPassword:cpNew,confirmPassword:cpCon})});
-      setSuccess('Password changed successfully.'); setCpCur(''); setCpNew(''); setCpCon('');
+      await apiFetch(`${API_BASE}/student/change-password`,{method:'PUT',body:JSON.stringify({currentPassword:cpCur,newPassword:cpNew,confirmPassword:cpCon,otp:cpOtp})});
+      setSuccess('Password changed successfully.'); setCpCur(''); setCpNew(''); setCpCon(''); setCpOtp('');
     } catch(e){ setError(e.message); }
   };
 
@@ -1235,7 +1262,7 @@ const StudentDashboard = () => {
 
   return (
     <div className="sp-bg">
-      {/* Mandatory Password Change Overlay */}
+      {/* Mandatory Password Change & OTP Verification Overlay */}
       {profile?.must_change_password && (
         <div style={{
           position: 'fixed',
@@ -1243,30 +1270,36 @@ const StudentDashboard = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(5, 7, 15, 0.92)',
-          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(5, 7, 15, 0.94)',
+          backdropFilter: 'blur(10px)',
           zIndex: 99999,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '1rem'
         }}>
-          <div className="panel-card" style={{
-            maxWidth: '440px',
+          <div className="panel-card animate-fade-in" style={{
+            maxWidth: '460px',
             width: '100%',
-            border: '1px solid rgba(0, 229, 255, 0.4)',
-            boxShadow: '0 0 35px rgba(0, 229, 255, 0.25)',
-            borderRadius: '12px'
+            border: '1px solid rgba(0, 229, 255, 0.45)',
+            boxShadow: '0 0 40px rgba(0, 229, 255, 0.3)',
+            borderRadius: '14px',
+            padding: '2rem 1.75rem'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
-              <ShieldAlert size={26} color="var(--orange)" />
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--cyan)', letterSpacing: '0.05em' }}>
-                SECURITY UPDATE REQUIRED
+              <ShieldAlert size={28} color="var(--orange)" />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--cyan)', letterSpacing: '0.04em' }}>
+                  SECURITY VERIFICATION REQUIRED
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', letterSpacing: '0.02em' }}>
+                  First-Time Account Setup
+                </div>
               </div>
             </div>
 
             <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: '1.25rem', lineHeight: '1.5' }}>
-              You are currently using a temporary default password. For your account security, please set your new personal password before accessing the dashboard.
+              A 6-digit verification code has been sent to your registered email <strong style={{ color: 'var(--cyan)' }}>{profile?.email}</strong>. Please enter the OTP and create your permanent personal password.
             </p>
 
             {error && <Alert type="error">{error}</Alert>}
@@ -1277,68 +1310,142 @@ const StudentDashboard = () => {
               setError('');
               setSuccess('');
               try {
-                await apiFetch(`${API_BASE}/student/change-password`, {
+                const res = await apiFetch(`${API_BASE}/student/change-password`, {
                   method: 'PUT',
-                  body: JSON.stringify({ currentPassword: cpCur, newPassword: cpNew, confirmPassword: cpCon })
+                  body: JSON.stringify({ 
+                    currentPassword: cpCur, 
+                    newPassword: cpNew, 
+                    confirmPassword: cpCon, 
+                    otp: cpOtp 
+                  })
                 });
-                setSuccess('Password updated successfully!');
+                setSuccess(res.message || 'Password verified and updated successfully!');
                 setCpCur('');
                 setCpNew('');
                 setCpCon('');
-                loadAll();
+                setCpOtp('');
+                setTimeout(() => {
+                  loadAll();
+                }, 1000);
               } catch (err) {
                 setError(err.message);
               }
             }}>
+              {/* OTP Field */}
+              <div className="input-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label className="input-label" style={{ marginBottom: 0 }}>6-Digit Email OTP</label>
+                  <button 
+                    type="button" 
+                    onClick={handleResendSetupOtp}
+                    disabled={setupOtpCooldown > 0 || resendingOtp}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      color: setupOtpCooldown > 0 ? 'var(--text-3)' : 'var(--cyan)', 
+                      fontSize: '0.75rem', 
+                      fontWeight: 600, 
+                      cursor: setupOtpCooldown > 0 ? 'not-allowed' : 'pointer',
+                      padding: 0
+                    }}
+                  >
+                    {resendingOtp ? 'Sending...' : setupOtpCooldown > 0 ? `Resend in ${setupOtpCooldown}s` : 'Resend OTP'}
+                  </button>
+                </div>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  value={cpOtp} 
+                  onChange={e => setCpOtp(e.target.value.replace(/[^0-9]/g, '').substring(0, 6))} 
+                  placeholder="000000" 
+                  maxLength={6}
+                  style={{ textAlign: 'center', fontSize: '1.4rem', letterSpacing: '6px', fontWeight: 800, padding: '0.6rem' }}
+                  required
+                />
+              </div>
+
+              {/* Temporary Password Field */}
               <div className="input-group">
                 <label className="input-label">Current / Temporary Password</label>
-                <input 
-                  type="password" 
-                  className="input-field" 
-                  value={cpCur} 
-                  onChange={e => setCpCur(e.target.value.substring(0, 12))} 
-                  placeholder="Enter current password" 
-                  maxLength={12}
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showCurPass ? "text" : "password"} 
+                    className="input-field" 
+                    style={{ paddingRight: '2.5rem' }}
+                    value={cpCur} 
+                    onChange={e => setCpCur(e.target.value.substring(0, 12))} 
+                    placeholder="Enter temporary password" 
+                    maxLength={12}
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCurPass(!showCurPass)} 
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    {showCurPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
+              {/* New Password Field */}
               <div className="input-group">
-                <label className="input-label">New Password (max 12 chars)</label>
-                <input 
-                  type="password" 
-                  className="input-field" 
-                  value={cpNew} 
-                  onChange={e => setCpNew(e.target.value.substring(0, 12))} 
-                  placeholder="Enter new password" 
-                  maxLength={12}
-                  required
-                />
+                <label className="input-label">New Password (max 12 characters)</label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showNewPass ? "text" : "password"} 
+                    className="input-field" 
+                    style={{ paddingRight: '2.5rem' }}
+                    value={cpNew} 
+                    onChange={e => setCpNew(e.target.value.substring(0, 12))} 
+                    placeholder="Enter new password (min 6, max 12 chars)" 
+                    maxLength={12}
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowNewPass(!showNewPass)} 
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
-              <div className="input-group">
+              {/* Confirm New Password Field */}
+              <div className="input-group" style={{ marginBottom: '1.25rem' }}>
                 <label className="input-label">Confirm New Password</label>
-                <input 
-                  type="password" 
-                  className="input-field" 
-                  value={cpCon} 
-                  onChange={e => setCpCon(e.target.value.substring(0, 12))} 
-                  placeholder="Re-enter new password" 
-                  maxLength={12}
-                  required
-                />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showConPass ? "text" : "password"} 
+                    className="input-field" 
+                    style={{ paddingRight: '2.5rem' }}
+                    value={cpCon} 
+                    onChange={e => setCpCon(e.target.value.substring(0, 12))} 
+                    placeholder="Re-enter new password" 
+                    maxLength={12}
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowConPass(!showConPass)} 
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    {showConPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem', fontWeight: 700 }}>
-                Update Password & Continue
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', fontWeight: 700, padding: '0.85rem' }}>
+                Verify OTP & Save Password
               </button>
 
               <button 
                 type="button" 
                 onClick={logout} 
-                style={{ width: '100%', marginTop: '0.75rem', background: 'transparent', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '0.8rem' }}
+                style={{ width: '100%', marginTop: '0.85rem', background: 'transparent', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: '0.82rem' }}
               >
-                Sign Out
+                Sign Out & Return to Login
               </button>
             </form>
           </div>

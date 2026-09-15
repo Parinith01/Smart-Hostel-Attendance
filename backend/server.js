@@ -604,6 +604,23 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid User ID or password.' });
     }
 
+    // If student has temporary password, pre-generate and send verification OTP
+    if (student.must_change_password && student.email) {
+      try {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        const emailLower = student.email.toLowerCase().trim();
+        await OTPModel.create({
+          email: emailLower,
+          otp,
+          expires_at: expiresAt
+        });
+        sendOtpEmail(emailLower, otp).catch(e => console.error('[OTP Email Error]:', e));
+      } catch (otpErr) {
+        console.error('Failed to pre-dispatch OTP on login:', otpErr);
+      }
+    }
+
     // Issue JWT Token inside HTTP-Only cookie
     const token = jwt.sign(
       { id: student.id, role: student.role, name: student.name },
@@ -1244,6 +1261,140 @@ app.post('/api/student/leave', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Send or Resend OTP for First-Time Setup / Mandatory Password Change
+app.post('/api/student/send-setup-otp', authenticateToken, async (req, res) => {
+  try {
+    const student = await Student.findByPk(req.user.id);
+    if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+    const emailLower = student.email.toLowerCase().trim();
+
+    // Rate limiting: 60 seconds between resends
+    const recentOtp = await OTPModel.findOne({
+      where: {
+        email: emailLower,
+        createdAt: { [Op.gt]: new Date(Date.now() - 60 * 1000) }
+      }
+    });
+
+    if (recentOtp) {
+      const waitSeconds = Math.max(0, Math.ceil((recentOtp.createdAt.getTime() + 60 * 1000 - Date.now()) / 1000));
+      return res.status(429).json({ error: `Please wait ${waitSeconds} seconds before requesting a new OTP.` });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await OTPModel.create({
+      email: emailLower,
+      otp,
+      expires_at: expiresAt
+    });
+
+    await sendOtpEmail(emailLower, otp);
+
+    return res.json({ success: true, message: 'Verification OTP sent to your registered email.' });
+  } catch (err) {
+    console.error('Send setup OTP failed:', err);
+    return res.status(500).json({ error: 'Server error sending verification code.' });
+  }
+});
+
+// Update Password Route (Handles First-time OTP setup and standard password changes)
+app.put('/api/student/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword, otp } = req.body;
+    const student = await Student.findByPk(req.user.id);
+    if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'Current password, new password, and confirmation are required.' });
+    }
+
+    if (newPassword.length > 12) {
+      return res.status(400).json({ error: 'New password cannot exceed 12 characters.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New passwords do not match.' });
+    }
+
+    // Verify current / temporary password
+    const match = await bcrypt.compare(currentPassword, student.password);
+    if (!match) {
+      return res.status(400).json({ error: 'Incorrect current / temporary password.' });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: 'New password must be different from your current/temporary password.' });
+    }
+
+    // If first-time login / must_change_password is true, enforce OTP verification
+    if (student.must_change_password) {
+      if (!otp || otp.toString().trim().length !== 6) {
+        return res.status(400).json({ error: 'Please enter the 6-digit OTP code sent to your email.' });
+      }
+
+      const emailLower = student.email.toLowerCase().trim();
+      const dbOtp = await OTPModel.findOne({
+        where: { email: emailLower, otp: otp.toString().trim() },
+        order: [['createdAt', 'DESC']]
+      });
+
+      if (!dbOtp) {
+        return res.status(400).json({ error: 'Invalid OTP verification code. Please check your email or request a new code.' });
+      }
+
+      if (new Date() > new Date(dbOtp.expires_at)) {
+        return res.status(400).json({ error: 'OTP verification code has expired. Please click Resend OTP.' });
+      }
+
+      // Cleanup used OTPs
+      await OTPModel.destroy({ where: { email: emailLower } });
+      student.must_change_password = false;
+    }
+
+    // Update password hash
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    student.password = hashedPassword;
+    await student.save();
+
+    return res.json({
+      success: true,
+      message: 'Password updated successfully! Your account is now fully secured.'
+    });
+
+  } catch (err) {
+    console.error('Change password failed:', err);
+    return res.status(500).json({ error: 'Server error updating password.' });
+  }
+});
+
+// Update Student Profile Details
+app.put('/api/student/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, room_number, block, join_year, leaving_year } = req.body;
+    const student = await Student.findByPk(req.user.id);
+    if (!student) return res.status(404).json({ error: 'Student not found.' });
+
+    if (name) student.name = name.trim();
+    if (room_number) student.room_number = room_number.trim();
+    if (block) student.block = block;
+    if (join_year) student.join_year = parseInt(join_year);
+    if (leaving_year) student.leaving_year = parseInt(leaving_year);
+
+    await student.save();
+    return res.json({ success: true, message: 'Profile updated successfully.' });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    return res.status(500).json({ error: 'Server error updating profile.' });
   }
 });
 
